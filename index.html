@@ -4315,29 +4315,46 @@
       document.getElementById('btn-victory-lobby').addEventListener('click', exitToLobby);
       document.getElementById('btn-victory-restart').addEventListener('click', startNewRun);
 
-      elHudSnapBtn.addEventListener('click', triggerSnapOfDoom);
-      elBtnTouchSnap.addEventListener('click', triggerSnapOfDoom);
-      elBtnTouchShoot.addEventListener('click', function () { fireBolt(); });
-      elBtnTouchInteract.addEventListener('click', function () {
+      elHudSnapBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.currentTarget.blur();
+        triggerSnapOfDoom();
+      });
+      elBtnTouchSnap.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.currentTarget.blur();
+        triggerSnapOfDoom();
+      });
+      elBtnTouchShoot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.currentTarget.blur();
+        fireBolt();
+      });
+      elBtnTouchInteract.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.currentTarget.blur();
         SoundEngine.playSwitchPress();
         triggerInteract();
       });
 
       // PC Mouse Click on Canvas aims toward cursor & fires!
-      elGameCanvas.addEventListener('mousedown', function (e) {
+      elGameCanvas.addEventListener('mousedown', (e) => {
         if (e.button !== 0 || state.screen !== 'playing' || state.isPaused) return;
-        var rect = elGameCanvas.getBoundingClientRect();
-        var sx = e.clientX - rect.left;
-        var sy = e.clientY - rect.top;
-        var worldX = state.player.x + (sx - elGameCanvas.width / 2) / lastCamScale;
-        var worldY = state.player.y + (sy - elGameCanvas.height / 2) / lastCamScale;
+        const rect = elGameCanvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        const worldX = state.player.x + (sx - elGameCanvas.width / 2) / lastCamScale;
+        const worldY = state.player.y + (sy - elGameCanvas.height / 2) / lastCamScale;
         fireBolt(worldX - state.player.x, worldY - state.player.y);
       });
 
       // PC Keyboard Bindings
-      window.addEventListener('keydown', function (e) {
+      window.addEventListener('keydown', (e) => {
         if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.code) !== -1) {
           e.preventDefault();
+          if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+          }
         }
         if (state.screen !== 'playing') return;
         if (e.code === 'Escape' || e.code === 'KeyP') {
@@ -4351,89 +4368,93 @@
         else if (e.code === 'KeyF') triggerSnapOfDoom();
       });
 
-      window.addEventListener('keyup', function (e) {
+      window.addEventListener('keyup', (e) => {
         keysDown[e.code] = false;
       });
 
-      window.addEventListener('blur', function () {
+      window.addEventListener('blur', () => {
         keysDown = {};
         touchVector = { x: 0, y: 0 };
       });
 
       // Virtual Touch Joystick (Pointer Capture Multi-Touch Safe)
-      var joystickPointerId = null;
+      let joystickPointerId = null;
 
-      function updateJoystick(clientX, clientY) {
-        var rect = elJoystickBase.getBoundingClientRect();
-        var cx = rect.left + rect.width / 2;
-        var cy = rect.top + rect.height / 2;
-        var dx = clientX - cx;
-        var dy = clientY - cy;
-        var dist = Math.hypot(dx, dy);
-        var maxR = Math.max(30, rect.width * 0.36);
+      const updateJoystick = (clientX, clientY) => {
+        const rect = elJoystickBase.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = clientX - cx;
+        const dy = clientY - cy;
+        const dist = Math.hypot(dx, dy);
+        const maxR = Math.max(30, rect.width * 0.36);
 
         if (dist === 0) {
           elJoystickKnob.style.transform = 'translate(0px, 0px)';
           touchVector = { x: 0, y: 0 };
           return;
         }
-        var ang = Math.atan2(dy, dx);
-        var clamped = Math.min(dist, maxR);
-        var kx = Math.cos(ang) * clamped;
-        var ky = Math.sin(ang) * clamped;
-        elJoystickKnob.style.transform = 'translate(' + kx.toFixed(1) + 'px, ' + ky.toFixed(1) + 'px)';
+        const ang = Math.atan2(dy, dx);
+        const clamped = Math.min(dist, maxR);
+        const kx = Math.cos(ang) * clamped;
+        const ky = Math.sin(ang) * clamped;
+        elJoystickKnob.style.transform = `translate(${kx.toFixed(1)}px, ${ky.toFixed(1)}px)`;
         touchVector = { x: kx / maxR, y: ky / maxR };
-      }
+      };
 
-      function resetJoystick() {
+      const resetJoystick = () => {
         joystickPointerId = null;
         elJoystickKnob.style.transform = 'translate(0px, 0px)';
         touchVector = { x: 0, y: 0 };
-      }
+      };
 
-      elJoystickBase.addEventListener('pointerdown', function (e) {
+      elJoystickBase.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         joystickPointerId = e.pointerId;
         try { elJoystickBase.setPointerCapture(e.pointerId); } catch (err) {}
         updateJoystick(e.clientX, e.clientY);
       });
 
-      elJoystickBase.addEventListener('pointermove', function (e) {
+      const handleJoystickMove = (e) => {
         if (joystickPointerId !== e.pointerId) return;
         e.preventDefault();
         updateJoystick(e.clientX, e.clientY);
-      });
+      };
 
-      elJoystickBase.addEventListener('pointerup', function (e) {
+      elJoystickBase.addEventListener('pointermove', handleJoystickMove);
+      window.addEventListener('pointermove', handleJoystickMove);
+
+      elJoystickBase.addEventListener('pointerup', (e) => {
         if (joystickPointerId === e.pointerId) resetJoystick();
       });
 
-      elJoystickBase.addEventListener('pointercancel', function (e) {
+      elJoystickBase.addEventListener('pointercancel', (e) => {
         if (joystickPointerId === e.pointerId) resetJoystick();
       });
 
-      window.addEventListener('pointerup', function (e) {
+      window.addEventListener('pointerup', (e) => {
         if (joystickPointerId === e.pointerId) resetJoystick();
       });
 
       // Global Anti-Scroll Touchmove Lock (prevents bounce / pull-to-refresh)
-      function preventTouchScroll(e) {
+      const preventTouchScroll = (e) => {
         if (e.cancelable) e.preventDefault();
-      }
+      };
       document.addEventListener('touchmove', preventTouchScroll, { passive: false });
       window.addEventListener('touchmove', preventTouchScroll, { passive: false });
 
-      // Responsive Canvas Resize & Orientation Change
-      function handleViewportResize() {
+      // Responsive Canvas Resize, Fullscreen & Orientation Change
+      const handleViewportResize = () => {
         elGameCanvas.width = Math.max(1, window.innerWidth);
         elGameCanvas.height = Math.max(1, window.innerHeight);
         if (state.screen === 'playing' && state.level) {
-          var ctx = elGameCanvas.getContext('2d');
+          const ctx = elGameCanvas.getContext('2d');
           if (ctx) renderGameWorld(ctx, elGameCanvas, state.elapsedSeconds);
         }
-      }
+      };
       window.addEventListener('resize', handleViewportResize);
       window.addEventListener('orientationchange', handleViewportResize);
+      document.addEventListener('fullscreenchange', handleViewportResize);
 
       // Initialize Lobby
       syncUI();

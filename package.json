@@ -7,8 +7,8 @@
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "clean": "rm -rf dist",
+    "lint": "node -e \"const fs=require('fs'),h=fs.readFileSync('index.html','utf8'),m=h.match(/<script>([\\s\\S]*?)<\\/script>/);if(!m)throw new Error('Missing <script>');new Function(m[1]);console.log('Pure HTML5 ES6 JS syntax OK')\""
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
