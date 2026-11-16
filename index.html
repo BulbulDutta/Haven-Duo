@@ -1,30 +1,4444 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Haven - Single-Player Sanctuary</title>
-    <meta name="description" content="A peaceful yet action-packed 2D top-down single-player puzzle adventure set in a heavenly sanctuary." />
-    <meta property="og:title" content="Haven - Single-Player Sanctuary" />
-    <meta property="og:description" content="A peaceful yet action-packed 2D top-down single-player puzzle adventure set in a heavenly sanctuary." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-[#050b14] text-slate-100 antialiased select-none overflow-hidden touch-none">
-    <div id="root"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Haven - Single-Player Sanctuary</title>
+  <meta name="description" content="A peaceful yet action-packed 2D top-down single-player puzzle adventure set in a heavenly sanctuary." />
+  <meta property="og:title" content="Haven - Single-Player Sanctuary" />
+  <meta property="og:description" content="A peaceful yet action-packed 2D top-down single-player puzzle adventure set in a heavenly sanctuary." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* =========================================================
+       Base Reset, Anti-Scroll & Typography
+       ========================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-    <!-- HTML5 Audio Tags for Sanctuary SFX & Ambient Audio -->
-    <audio id="haven-bgm" loop preload="none"></audio>
-    <audio id="sfx-shoot" preload="none"></audio>
-    <audio id="sfx-coin" preload="none"></audio>
-    <audio id="sfx-key" preload="none"></audio>
-    <audio id="sfx-unlock" preload="none"></audio>
-    <audio id="sfx-switch" preload="none"></audio>
+    html,
+    body,
+    .game-container {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+      -ms-touch-action: none;
+      background-color: #050b14;
+      color: #f1f5f9;
+      font-family: 'Quicksand', 'Montserrat', system-ui, -apple-system, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
 
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    h1, h2, h3, .font-cinzel {
+      font-family: 'Cinzel', Georgia, serif;
+    }
+
+    .font-mono-num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================================================
+       Game Container & Lobby Sky Layer
+       ========================================================= */
+    .game-container {
+      position: relative;
+      width: 100vw;
+      height: 100dvh;
+    }
+
+    .screen-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .lobby-sky-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 10%, rgba(255, 241, 168, 0.36) 0%, rgba(56, 189, 248, 0.18) 38%, rgba(12, 31, 61, 0.88) 76%, #050b14 100%),
+        linear-gradient(180deg, #1b4372 0%, #102a4c 48%, #071426 100%);
+      pointer-events: none;
+    }
+
+    .lobby-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 18%, rgba(254, 240, 138, 0.16) 0%, rgba(10, 24, 46, 0.28) 58%, rgba(4, 9, 20, 0.78) 100%);
+      pointer-events: none;
+    }
+
+    #lobby-bg-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* =========================================================
+       Top Lobby Header (Centered HAVEN + Top-Right Tokens)
+       ========================================================= */
+    .lobby-header {
+      position: relative;
+      z-index: 20;
+      width: 100%;
+      padding: 20px 36px 0;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .lobby-title-wrap {
+      text-align: center;
+    }
+
+    .haven-title-3d {
+      margin: 0;
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 900;
+      font-size: clamp(32px, 5.2vw, 72px);
+      line-height: 1.05;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      background: linear-gradient(180deg, #ffffff 0%, #fff5c0 24%, #e5a83b 58%, #a16207 86%, #663c05 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter:
+        drop-shadow(0 2px 2px rgba(255, 255, 255, 0.38))
+        drop-shadow(0 5px 12px rgba(0, 0, 0, 0.85))
+        drop-shadow(0 0 28px rgba(255, 215, 0, 0.65));
+    }
+
+    .lobby-header-right {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* =========================================================
+       Sleek Pill Token Badge (Top-Right)
+       ========================================================= */
+    .token-pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 18px 7px 9px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(28, 52, 86, 0.86) 0%, rgba(11, 23, 42, 0.96) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid #f59e0b;
+      border-radius: 9999px;
+      box-shadow:
+        0 0 16px rgba(245, 158, 11, 0.45),
+        0 4px 16px rgba(0, 0, 0, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.35);
+      pointer-events: none;
+    }
+
+    .token-coin-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffe57f 0%, #f59e0b 70%, #b45309 100%);
+      border: 1.5px solid #fef08a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 900;
+      font-size: 13px;
+      color: #78350f;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      flex-shrink: 0;
+    }
+
+    .token-text {
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      color: #f1f5f9;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      white-space: nowrap;
+    }
+
+    /* =========================================================
+       Centered Lobby Stage (Angel + Play + Shop)
+       ========================================================= */
+    .lobby-center-container {
+      position: absolute;
+      top: 55%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: clamp(20px, 5vw, 56px);
+      width: min(92vw, 900px);
+      z-index: 10;
+    }
+
+    .angel-showcase {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    @keyframes angelFloating {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .angel-float {
+      animation: angelFloating 4.4s ease-in-out infinite;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .angel-halo-glow {
+      position: absolute;
+      top: 46%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(140px, 24vw, 240px);
+      height: clamp(140px, 24vw, 240px);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(253, 224, 71, 0.25) 0%, rgba(56, 189, 248, 0.16) 45%, transparent 72%);
+      filter: blur(18px);
+      pointer-events: none;
+    }
+
+    .angel-art-box {
+      position: relative;
+      width: clamp(130px, 22vw, 235px);
+      height: clamp(145px, 38dvh, 270px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 22px rgba(125, 211, 252, 0.4));
+    }
+
+    .angel-art-box svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .adventurer-plate {
+      margin-top: 6px;
+      padding: 6px 20px;
+      background: rgba(15, 27, 48, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid rgba(255, 215, 0, 0.38);
+      border-radius: 12px;
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: #e2e8f0;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      white-space: nowrap;
+    }
+
+    .lobby-actions-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex: 1;
+      max-width: 380px;
+    }
+
+    /* Massive Glowing Pill PLAY Button */
+    .play-pill-button {
+      position: relative;
+      width: clamp(210px, 28vw, 350px);
+      height: clamp(58px, 9.5dvh, 84px);
+      border-radius: 9999px;
+      background: radial-gradient(ellipse at 50% 120%, rgba(56, 189, 248, 0.45) 0%, rgba(15, 36, 68, 0.92) 55%, rgba(10, 24, 46, 0.98) 100%);
+      border: 3px solid #eab308;
+      box-shadow:
+        0 0 32px rgba(234, 179, 8, 0.45),
+        0 0 64px rgba(56, 189, 248, 0.25),
+        0 12px 32px rgba(0, 0, 0, 0.6),
+        inset 0 0 22px rgba(56, 189, 248, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+      outline: none;
+      padding: 0;
+    }
+
+    .play-pill-button::before,
+    .play-pill-button::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 9px;
+      height: 9px;
+      background: #38bdf8;
+      box-shadow: 0 0 12px #38bdf8, 0 0 4px #ffffff;
+      transform: translateY(-50%) rotate(45deg);
+      border: 1px solid #ffffff;
+      z-index: 2;
+    }
+
+    .play-pill-button::before { left: -5px; }
+    .play-pill-button::after { right: -5px; }
+
+    .play-pill-button:hover {
+      transform: scale(1.045);
+      border-color: #fde047;
+      box-shadow:
+        0 0 44px rgba(253, 224, 71, 0.72),
+        0 0 80px rgba(56, 189, 248, 0.48),
+        0 16px 40px rgba(0, 0, 0, 0.7),
+        inset 0 0 30px rgba(56, 189, 248, 0.6);
+    }
+
+    .play-pill-button:active {
+      transform: scale(0.97);
+    }
+
+    .play-text {
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: clamp(24px, 3.5vw, 36px);
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      background: linear-gradient(180deg, #ffffff 0%, #fff5b8 30%, #eab308 70%, #92400e 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 14px rgba(255, 215, 0, 0.6));
+    }
+
+    .lobby-shop-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: clamp(180px, 22vw, 250px);
+      padding: 12px 24px;
+      border-radius: 9999px;
+      background: rgba(15, 29, 52, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid rgba(245, 158, 11, 0.68);
+      color: #fef3c7;
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0.18em;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      outline: none;
+    }
+
+    .lobby-shop-button:hover {
+      transform: translateY(-2px);
+      background: rgba(24, 44, 78, 0.94);
+      border-color: #fde047;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 22px rgba(245, 158, 11, 0.35);
+    }
+
+    .lobby-shop-button:active {
+      transform: scale(0.97);
+    }
+
+    .lobby-loadout-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: rgba(203, 213, 225, 0.92);
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .dot-sep {
+      color: #64748b;
+    }
+
+    /* =========================================================
+       Active Gameplay Canvas & Top HUD
+       ========================================================= */
+    #game-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #bae6fd;
+      cursor: crosshair;
+    }
+
+    .hud-top-left {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: calc(100vw - 185px);
+    }
+
+    .hud-top-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .rpg-health-frame {
+      padding: 7px 12px;
+      background: linear-gradient(180deg, rgba(19, 28, 46, 0.92) 0%, rgba(10, 16, 28, 0.96) 100%);
+      border: 1.5px solid rgba(217, 119, 6, 0.72);
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(254, 243, 199, 0.22);
+    }
+
+    .hearts-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .heart-svg {
+      width: 18px;
+      height: 18px;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+    }
+
+    .vitality-subrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .vitality-track {
+      flex: 1;
+      min-width: 64px;
+      height: 6px;
+      background: #020617;
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid rgba(180, 83, 9, 0.65);
+    }
+
+    .vitality-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #e11d48, #fb7185);
+      transition: width 0.2s ease-out;
+    }
+
+    .vitality-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fef3c7;
+      line-height: 1;
+    }
+
+    .hud-info-card {
+      background: rgba(2, 6, 23, 0.86);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      padding: 7px 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .hud-stage-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hud-stage-name {
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 700;
+      color: #fde68a;
+    }
+
+    .hud-timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .hud-stats-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: #e2e8f0;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+    }
+
+    .stat-sky { color: #7dd3fc; }
+    .stat-gold { color: #fcd34d; }
+    .stat-emerald { color: #6ee7b7; }
+    .stat-muted { color: #cbd5e1; font-weight: 600; }
+
+    .hud-snap-btn {
+      pointer-events: auto;
+      padding: 6px 12px;
+      border-radius: 9px;
+      background: rgba(2, 6, 23, 0.88);
+      border: 1px solid rgba(251, 191, 36, 0.65);
+      color: #fef3c7;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .hud-snap-btn:hover {
+      background: rgba(59, 7, 100, 0.9);
+    }
+
+    .hud-snap-btn:active {
+      transform: scale(0.96);
+    }
+
+    .hud-hint-box {
+      max-width: 420px;
+      background: rgba(2, 6, 23, 0.75);
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+
+    .hud-banner {
+      background: #fbbf24;
+      color: #020617;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #fde68a;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+      max-width: 360px;
+    }
+
+    .hud-top-right {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .pause-circle-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(2, 6, 23, 0.88);
+      border: 1.5px solid rgba(251, 191, 36, 0.65);
+      color: #fde68a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      padding: 0;
+    }
+
+    .pause-circle-btn:hover {
+      background: #0f172a;
+      border-color: #fde047;
+      transform: scale(1.05);
+    }
+
+    .pause-circle-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* =========================================================
+       Virtual Touch Controls (Joystick + Snap + Shoot + Interact)
+       ========================================================= */
+    .virtual-controls {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      pointer-events: none;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 22px 20px;
+      touch-action: none;
+    }
+
+    .joystick-wrap {
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    .joystick-base {
+      position: relative;
+      width: 124px;
+      height: 124px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.28);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.78);
+      box-shadow: 0 8px 32px rgba(135, 206, 235, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .joystick-ring {
+      position: absolute;
+      inset: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(125, 211, 252, 0.45);
+      pointer-events: none;
+    }
+
+    .joystick-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.75);
+      pointer-events: none;
+    }
+
+    .joystick-dot.n { top: 8px; left: 50%; transform: translateX(-50%); }
+    .joystick-dot.s { bottom: 8px; left: 50%; transform: translateX(-50%); }
+    .joystick-dot.w { left: 8px; top: 50%; transform: translateY(-50%); }
+    .joystick-dot.e { right: 8px; top: 50%; transform: translateY(-50%); }
+
+    .joystick-knob {
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #0ea5e9, #38bdf8, #fcd34d);
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .joystick-knob-inner {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .action-buttons-wrap {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+      touch-action: none;
+    }
+
+    .action-circle-btn {
+      position: relative;
+      border-radius: 50%;
+      border: 3px solid #ffffff;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.15s ease;
+      padding: 0;
+      touch-action: none;
+    }
+
+    .action-circle-btn:active {
+      transform: scale(0.9);
+    }
+
+    .action-circle-btn span.btn-lbl {
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .action-badge {
+      position: absolute;
+      top: -7px;
+      right: -4px;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      background: #0f172a;
+      border: 1px solid #7dd3fc;
+      font-size: 10px;
+      font-weight: 800;
+      color: #bae6fd;
+    }
+
+    .btn-snap {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(45deg, #9333ea, #d946ef, #fbbf24);
+      box-shadow: 0 8px 24px rgba(168, 85, 247, 0.55);
+    }
+
+    .btn-snap .action-badge {
+      border-color: #fcd34d;
+      color: #fde68a;
+    }
+
+    .btn-shoot {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(45deg, #0ea5e9, #6366f1, #22d3ee);
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.48);
+    }
+
+    .btn-shoot.blaster-mode {
+      background: linear-gradient(45deg, #f59e0b, #f43f5e, #fde047);
+      box-shadow: 0 8px 26px rgba(245, 158, 11, 0.65);
+    }
+
+    .btn-shoot.empty-ammo {
+      background: rgba(71, 85, 105, 0.85);
+      opacity: 0.78;
+    }
+
+    .btn-interact {
+      width: 76px;
+      height: 76px;
+      background: linear-gradient(45deg, #f59e0b, #fbbf24, #fde047);
+      box-shadow: 0 8px 28px rgba(245, 158, 11, 0.45);
+    }
+
+    /* =========================================================
+       Modals (Shop, Pause, Game Over, Victory)
+       ========================================================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      background: rgba(2, 6, 23, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      max-height: 92dvh;
+      background: #0d192b;
+      border: 1.5px solid rgba(245, 158, 11, 0.52);
+      border-radius: 18px;
+      padding: 20px 22px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-card.compact {
+      max-width: 360px;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.86);
+    }
+
+    .modal-card.danger {
+      border-color: rgba(244, 63, 94, 0.55);
+    }
+
+    .modal-card.victory {
+      max-width: 440px;
+      text-align: center;
+      background: linear-gradient(180deg, #0f172a 0%, #0f1f3a 50%, #0f172a 100%);
+      border: 2px solid rgba(251, 191, 36, 0.72);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-title {
+      margin: 0;
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 900;
+      font-size: 18px;
+      color: #fef3c7;
+    }
+
+    .modal-subtitle {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .close-icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .close-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
+
+    .shop-item-row {
+      padding: 13px 14px;
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .shop-item-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .shop-icon-box {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #ffffff;
+    }
+
+    .shop-icon-box.snap {
+      background: linear-gradient(135deg, #7e22ce, #f59e0b);
+    }
+
+    .shop-icon-box.blaster {
+      background: linear-gradient(135deg, #e11d48, #fbbf24);
+      color: #020617;
+    }
+
+    .shop-item-title {
+      margin: 0;
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fef3c7;
+    }
+
+    .shop-item-meta {
+      font-size: 12px;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .shop-item-desc {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .kbd-key {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #1e293b;
+      color: #fcd34d;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    .btn-gold {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      color: #020617;
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      box-shadow: 0 6px 18px rgba(245, 158, 11, 0.25);
+      transition: transform 0.12s ease, filter 0.15s ease;
+    }
+
+    .btn-gold:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .btn-gold:disabled {
+      background: #1e293b;
+      color: #64748b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .btn-ghost {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: background 0.15s ease;
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .equipped-badge {
+      padding: 8px 13px;
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      color: #6ee7b7;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .modal-actions-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal-actions-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-actions-row > * {
+      flex: 1;
+    }
+
+    .victory-trophy {
+      margin: 0 auto;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #f59e0b, #fde047, #fef9c3);
+      border: 3px solid rgba(255, 255, 255, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #78350f;
+      box-shadow: 0 8px 24px rgba(251, 191, 36, 0.35);
+    }
+
+    .victory-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 12px;
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid rgba(251, 191, 36, 0.28);
+      border-radius: 12px;
+    }
+
+    .victory-stat-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .victory-stat-cell + .victory-stat-cell {
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .victory-stat-lbl {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .victory-stat-val {
+      font-size: 18px;
+      font-weight: 900;
+      color: #f8fafc;
+    }
+
+    /* =========================================================
+       Mobile Landscape & Portrait Warning Rules
+       ========================================================= */
+    @media (max-width: 720px) {
+      .lobby-header {
+        padding: 12px 16px 0;
+      }
+
+      .token-pill-badge {
+        gap: 6px;
+        padding: 5px 12px 5px 6px;
+      }
+
+      .token-coin-icon {
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
+      }
+
+      .token-text {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+
+      .hud-top-left {
+        max-width: calc(100vw - 145px);
+      }
+
+      .hud-hint-box {
+        display: none;
+      }
+
+      .joystick-base {
+        width: 108px;
+        height: 108px;
+      }
+
+      .joystick-knob {
+        width: 46px;
+        height: 46px;
+      }
+
+      .btn-snap { width: 54px; height: 54px; }
+      .btn-shoot { width: 62px; height: 62px; }
+      .btn-interact { width: 64px; height: 64px; }
+    }
+
+    @media (orientation: landscape) and (max-height: 480px) {
+      .lobby-header {
+        padding-top: 10px;
+      }
+
+      .haven-title-3d {
+        font-size: clamp(26px, 8vh, 42px);
+      }
+
+      .lobby-center-container {
+        top: 56%;
+        width: min(92vw, 760px);
+      }
+
+      .angel-art-box {
+        height: 36dvh;
+        width: clamp(100px, 28vh, 165px);
+      }
+
+      .adventurer-plate {
+        padding: 4px 14px;
+        font-size: 10px;
+      }
+
+      .play-pill-button {
+        width: clamp(185px, 25vw, 245px);
+        height: clamp(48px, 12.5dvh, 64px);
+      }
+
+      .play-text {
+        font-size: clamp(20px, 4.6vh, 27px);
+      }
+
+      .lobby-shop-button {
+        width: clamp(155px, 21vw, 200px);
+        padding: 8px 16px;
+        font-size: 12px;
+      }
+
+      .modal-card {
+        padding: 14px 16px;
+        gap: 10px;
+      }
+
+      .shop-item-row {
+        padding: 9px 11px;
+      }
+    }
+
+    /* Portrait Warning Overlay */
+    @keyframes rotatePhoneHint {
+      0%, 15% { transform: rotate(0deg) scale(1); }
+      45%, 75% { transform: rotate(-90deg) scale(1.06); }
+      95%, 100% { transform: rotate(0deg) scale(1); }
+    }
+
+    .portrait-warning-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      background: radial-gradient(circle at 50% 35%, #11223d 0%, #050b14 85%);
+      color: #f1f5f9;
+    }
+
+    .rotate-phone-box {
+      position: relative;
+      margin-bottom: 22px;
+      width: 92px;
+      height: 92px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1.5px solid rgba(251, 191, 36, 0.55);
+      box-shadow: 0 0 32px rgba(245, 158, 11, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rotate-phone-svg {
+      animation: rotatePhoneHint 2.4s ease-in-out infinite;
+      color: #fcd34d;
+    }
+
+    .portrait-title {
+      margin: 0 0 8px;
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: #fde68a;
+    }
+
+    .portrait-desc {
+      margin: 0;
+      max-width: 280px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    @media (orientation: portrait) {
+      canvas,
+      #game-canvas,
+      .game-landscape-stage {
+        display: none !important;
+      }
+
+      .portrait-warning-overlay {
+        display: flex !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-root" class="game-container">
+
+    <!-- =========================================================
+         1. LOBBY SCREEN (Main Menu + Token Counter + Shop Trigger)
+         ========================================================= -->
+    <div id="lobby-screen" class="screen-layer game-landscape-stage">
+      <div class="lobby-sky-bg"></div>
+      <div class="lobby-vignette"></div>
+      <canvas id="lobby-bg-canvas"></canvas>
+
+      <header class="lobby-header">
+        <div></div>
+        <div class="lobby-title-wrap">
+          <h1 class="haven-title-3d">HAVEN</h1>
+        </div>
+        <div class="lobby-header-right">
+          <div class="token-pill-badge">
+            <div class="token-coin-icon"><span>T</span></div>
+            <span id="lobby-tokens-text" class="token-text">TOKENS 0</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="lobby-center-container">
+        <!-- Left: Single Male Angel ("The Adventurer") -->
+        <div class="angel-showcase">
+          <div class="angel-float">
+            <div class="angel-halo-glow"></div>
+            <div class="angel-art-box" aria-label="The Adventurer Male Angel">
+              <svg viewBox="0 0 220 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="wingGradL" x1="100" y1="80" x2="10" y2="165" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#FFFFFF"/>
+                    <stop offset="65%" stop-color="#BAE6FD"/>
+                    <stop offset="100%" stop-color="#60A5FA"/>
+                  </linearGradient>
+                  <linearGradient id="wingGradR" x1="120" y1="80" x2="210" y2="165" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#FFFFFF"/>
+                    <stop offset="65%" stop-color="#BAE6FD"/>
+                    <stop offset="100%" stop-color="#60A5FA"/>
+                  </linearGradient>
+                  <linearGradient id="armorSilver" x1="110" y1="95" x2="110" y2="195" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#F8FAFC"/>
+                    <stop offset="55%" stop-color="#CBD5E1"/>
+                    <stop offset="100%" stop-color="#64748B"/>
+                  </linearGradient>
+                  <linearGradient id="azureTrim" x1="110" y1="98" x2="110" y2="210" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#60A5FA"/>
+                    <stop offset="60%" stop-color="#2563EB"/>
+                    <stop offset="100%" stop-color="#1E3A8A"/>
+                  </linearGradient>
+                  <linearGradient id="haloGold" x1="80" y1="22" x2="140" y2="38" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#FEF08A"/>
+                    <stop offset="50%" stop-color="#FACC15"/>
+                    <stop offset="100%" stop-color="#CA8A04"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- Left Feathered Wing -->
+                <path d="M98 110 C68 62, 18 52, 8 78 C24 88, 30 98, 12 108 C30 116, 36 126, 22 138 C42 142, 54 148, 42 162 C68 158, 86 144, 98 128 Z" fill="url(#wingGradL)" stroke="#38BDF8" stroke-width="2" stroke-linejoin="round"/>
+                <!-- Right Feathered Wing -->
+                <path d="M122 110 C152 62, 202 52, 212 78 C196 88, 190 98, 208 108 C190 116, 184 126, 198 138 C178 142, 166 148, 178 162 C152 158, 134 144, 122 128 Z" fill="url(#wingGradR)" stroke="#38BDF8" stroke-width="2" stroke-linejoin="round"/>
+
+                <!-- Golden Halo -->
+                <ellipse cx="110" cy="30" rx="26" ry="7.5" stroke="url(#haloGold)" stroke-width="4.5" fill="none"/>
+
+                <!-- Cape & Tunic Tail -->
+                <path d="M88 165 L74 224 L110 212 L146 224 L132 165 Z" fill="url(#azureTrim)" stroke="#93C5FD" stroke-width="1.5"/>
+                <path d="M95 166 L88 214 L110 206 L132 214 L125 166 Z" fill="#F8FAFC" opacity="0.9"/>
+
+                <!-- Boots / Greaves -->
+                <rect x="92" y="182" width="13" height="36" rx="6" fill="url(#armorSilver)" stroke="#3B82F6" stroke-width="1.5"/>
+                <rect x="115" y="182" width="13" height="36" rx="6" fill="url(#armorSilver)" stroke="#3B82F6" stroke-width="1.5"/>
+
+                <!-- Torso Armor & Shoulder Pauldrons -->
+                <path d="M78 112 C78 98, 92 94, 110 94 C128 94, 142 98, 142 112 L134 172 L86 172 Z" fill="url(#armorSilver)" stroke="#3B82F6" stroke-width="2"/>
+                <!-- Shoulder Pauldrons -->
+                <path d="M70 112 C70 96, 86 92, 94 102 L88 122 L72 118 Z" fill="url(#azureTrim)" stroke="#E0F2FE" stroke-width="1.5"/>
+                <path d="M150 112 C150 96, 134 92, 126 102 L132 122 L148 118 Z" fill="url(#azureTrim)" stroke="#E0F2FE" stroke-width="1.5"/>
+
+                <!-- Arms & Gauntlets -->
+                <rect x="70" y="116" width="12" height="44" rx="6" fill="url(#armorSilver)" stroke="#60A5FA" stroke-width="1.5"/>
+                <rect x="138" y="116" width="12" height="44" rx="6" fill="url(#armorSilver)" stroke="#60A5FA" stroke-width="1.5"/>
+
+                <!-- Chest Emblem -->
+                <path d="M110 105 L125 128 L110 150 L95 128 Z" fill="url(#azureTrim)" stroke="#FDE047" stroke-width="1.5"/>
+                <circle cx="110" cy="127" r="5" fill="#7DD3FC" stroke="#FFFFFF" stroke-width="1.2"/>
+
+                <!-- Belt -->
+                <rect x="86" y="160" width="48" height="9" rx="3" fill="#1E3A8A" stroke="#FACC15" stroke-width="1.5"/>
+                <circle cx="110" cy="164.5" r="4" fill="#FDE047"/>
+
+                <!-- Head & Male Guardian Hair -->
+                <circle cx="110" cy="70" r="20" fill="#FDE2C8" stroke="#D97706" stroke-width="1"/>
+                <path d="M89 67 C88 46, 132 45, 131 67 C127 56, 118 53, 110 56 C102 53, 93 56, 89 67 Z" fill="#64748B"/>
+                <path d="M90 62 C93 48, 126 48, 129 61 C122 52, 100 51, 90 62 Z" fill="#94A3B8"/>
+                <!-- Eyes -->
+                <circle cx="103" cy="71" r="2.3" fill="#0F172A"/>
+                <circle cx="117" cy="71" r="2.3" fill="#0F172A"/>
+                <circle cx="102.3" cy="70.2" r="0.8" fill="#FFFFFF"/>
+                <circle cx="116.3" cy="70.2" r="0.8" fill="#FFFFFF"/>
+              </svg>
+            </div>
+            <div class="adventurer-plate">THE ADVENTURER</div>
+          </div>
+        </div>
+
+        <!-- Right: Play & Shop Action Column -->
+        <div class="lobby-actions-col">
+          <button id="btn-play" type="button" class="play-pill-button" aria-label="Play Haven">
+            <span class="play-text">PLAY</span>
+          </button>
+
+          <button id="btn-open-shop" type="button" class="lobby-shop-button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+              <path d="M3 6h18"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            <span>SHOP</span>
+          </button>
+
+          <div id="lobby-loadout-line" class="lobby-loadout-line">
+            <span id="lobby-best-text">Best: Level 1-1</span>
+            <span class="dot-sep">&middot;</span>
+            <span id="lobby-weapon-text">Standard Bolt</span>
+            <span class="dot-sep">&middot;</span>
+            <span id="lobby-snap-text">Snap: 0</span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- =========================================================
+         2. LOBBY SHOP MODAL
+         ========================================================= -->
+    <div id="shop-modal" class="modal-backdrop game-landscape-stage hidden" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <h2 id="shop-title" class="modal-title">Sanctuary Armory</h2>
+            <p class="modal-subtitle">Equip relics before descending into the depths</p>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="token-pill-badge" style="padding: 5px 12px 5px 7px;">
+              <div class="token-coin-icon" style="width:22px; height:22px; font-size:11px;"><span>T</span></div>
+              <span id="shop-tokens-text" class="token-text" style="font-size:11px;">TOKENS 0</span>
+            </div>
+            <button id="btn-close-shop" type="button" class="close-icon-btn" aria-label="Close Shop">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Item 1: The Snap of Doom -->
+        <div class="shop-item-row">
+          <div class="shop-item-left">
+            <div class="shop-icon-box snap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+              </svg>
+            </div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <h3 class="shop-item-title">The Snap of Doom</h3>
+                <span class="dot-sep">&middot;</span>
+                <span id="shop-snap-owned" class="shop-item-meta">Owned: 0</span>
+              </div>
+              <p class="shop-item-desc">
+                Consumable relic. Press <span class="kbd-key">F</span> or tap Snap in battle to banish the nearest Shadow instantly.
+              </p>
+            </div>
+          </div>
+          <button id="btn-buy-snap" type="button" class="btn-gold">50 Tokens</button>
+        </div>
+
+        <!-- Item 2: One-Shot Blaster -->
+        <div class="shop-item-row">
+          <div class="shop-item-left">
+            <div class="shop-icon-box blaster">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <h3 class="shop-item-title">One-Shot Blaster</h3>
+                <span class="dot-sep">&middot;</span>
+                <span class="shop-item-meta">Permanent Sidearm</span>
+              </div>
+              <p class="shop-item-desc">
+                Fires superheated tracer bolts that fell any Shadow in a single hit.
+              </p>
+            </div>
+          </div>
+          <div id="blaster-action-slot">
+            <button id="btn-buy-blaster" type="button" class="btn-gold">150 Tokens</button>
+            <div id="blaster-equipped-badge" class="equipped-badge hidden">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span>Equipped</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end;">
+          <button id="btn-done-shop" type="button" class="btn-ghost">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         3. GAMEPLAY STAGE (Canvas + HUD + Touch Controls)
+         ========================================================= -->
+    <div id="game-stage" class="screen-layer game-landscape-stage hidden">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Top-Left Crafted Indie HUD -->
+      <div class="hud-top-left">
+        <div class="hud-top-row">
+          <div id="rpg-health-frame" class="rpg-health-frame" aria-label="Health">
+            <div id="rpg-hearts-row" class="hearts-row"></div>
+            <div class="vitality-subrow">
+              <div class="vitality-track">
+                <div id="vitality-fill" class="vitality-fill"></div>
+              </div>
+              <span id="hud-hp-text" class="vitality-label font-mono-num">100/100</span>
+            </div>
+          </div>
+
+          <div class="hud-info-card">
+            <div class="hud-stage-row">
+              <span id="hud-room-name" class="hud-stage-name">Level 1-1 &middot; Sunlit Courtyard</span>
+              <span class="dot-sep">&middot;</span>
+              <span class="hud-timer font-mono-num">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.3" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span id="hud-time-text">Time: 00:00</span>
+              </span>
+            </div>
+
+            <div class="hud-stats-row font-mono-num">
+              <span id="hud-shadows-text" class="stat-muted">Shadows: 0</span>
+              <span class="stat-pill-inline stat-sky">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5"/>
+                </svg>
+                <span id="hud-ammo-text">12/12</span>
+              </span>
+              <span id="hud-keys-wrap" class="stat-pill-inline stat-muted">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round">
+                  <circle cx="7.5" cy="15.5" r="5.5"/>
+                  <path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>
+                </svg>
+                <span id="hud-keys-text">0/1</span>
+              </span>
+              <span id="hud-blaster-tag" class="stat-pill-inline stat-gold hidden">Blaster</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="hud-snap-btn" type="button" class="hud-snap-btn hidden">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.3" stroke-linecap="round">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+          </svg>
+          <span id="hud-snap-label">The Snap of Doom [F] &middot; x0</span>
+        </button>
+
+        <div id="hud-hint-box" class="hud-hint-box"></div>
+        <div id="hud-banner" class="hud-banner hidden"></div>
+      </div>
+
+      <!-- Top-Right Pause & Persistent Token Counter -->
+      <div class="hud-top-right">
+        <button id="btn-pause" type="button" class="pause-circle-btn" aria-label="Pause Game" title="Pause [Esc]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <rect x="6" y="4" width="4" height="16"/>
+            <rect x="14" y="4" width="4" height="16"/>
+          </svg>
+        </button>
+
+        <div class="token-pill-badge">
+          <div class="token-coin-icon"><span>T</span></div>
+          <span id="hud-tokens-text" class="token-text">TOKENS 0</span>
+        </div>
+      </div>
+
+      <!-- Bottom Touch Controls (Joystick + Snap + Shoot + Interact) -->
+      <div id="virtual-controls" class="virtual-controls">
+        <div class="joystick-wrap">
+          <div id="joystick-base" class="joystick-base">
+            <div class="joystick-ring"></div>
+            <div class="joystick-dot n"></div>
+            <div class="joystick-dot s"></div>
+            <div class="joystick-dot w"></div>
+            <div class="joystick-dot e"></div>
+            <div id="joystick-knob" class="joystick-knob">
+              <div class="joystick-knob-inner"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons-wrap">
+          <button id="btn-touch-snap" type="button" class="action-circle-btn btn-snap hidden" title="The Snap of Doom [F]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+            </svg>
+            <span class="btn-lbl">Snap</span>
+            <span id="touch-snap-badge" class="action-badge">x0</span>
+          </button>
+
+          <button id="btn-touch-shoot" type="button" class="action-circle-btn btn-shoot" title="Shoot [Space / Click]">
+            <svg id="touch-shoot-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5"/>
+            </svg>
+            <span id="touch-shoot-lbl" class="btn-lbl">Shoot</span>
+            <span id="touch-ammo-badge" class="action-badge">12/12</span>
+          </button>
+
+          <button id="btn-touch-interact" type="button" class="action-circle-btn btn-interact" title="Interact [E]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/>
+              <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/>
+              <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/>
+              <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+            </svg>
+            <span class="btn-lbl">Interact</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         4. PAUSE OVERLAY
+         ========================================================= -->
+    <div id="pause-modal" class="modal-backdrop game-landscape-stage hidden" role="dialog" aria-modal="true">
+      <div class="modal-card compact">
+        <div>
+          <h2 class="modal-title" style="font-size:24px; letter-spacing:0.12em;">PAUSED</h2>
+          <p id="pause-subtitle" class="modal-subtitle font-mono-num">Level 1-1 &middot; Time: 00:00</p>
+        </div>
+        <div class="modal-actions-col">
+          <button id="btn-resume" type="button" class="btn-gold" style="padding:12px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#020617" stroke="#020617" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span>RESUME</span>
+          </button>
+          <button id="btn-exit-lobby" type="button" class="btn-ghost" style="padding:12px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="2.2" stroke-linecap="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span>EXIT TO LOBBY</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         5. GAME OVER OVERLAY
+         ========================================================= -->
+    <div id="gameover-modal" class="modal-backdrop game-landscape-stage hidden" role="dialog" aria-modal="true">
+      <div class="modal-card compact danger">
+        <div>
+          <h2 class="modal-title" style="font-size:24px; color:#fb7185;">Light Extinguished</h2>
+          <p id="gameover-subtitle" class="modal-subtitle font-mono-num">Reached Level 1-1 &middot; Time: 00:00</p>
+        </div>
+        <div class="modal-actions-row">
+          <button id="btn-gameover-lobby" type="button" class="btn-ghost">Main Menu</button>
+          <button id="btn-gameover-retry" type="button" class="btn-gold">Retry 1-1</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         6. VICTORY OVERLAY (Completing Level 10-3)
+         ========================================================= -->
+    <div id="victory-modal" class="modal-backdrop game-landscape-stage hidden" role="dialog" aria-modal="true">
+      <div class="modal-card victory">
+        <div class="victory-trophy">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+            <path d="M4 22h16"/>
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+          </svg>
+        </div>
+
+        <div>
+          <h2 class="haven-title-3d" style="font-size:24px; white-space:normal;">VICTORY: You have reached the Haven</h2>
+          <p class="modal-subtitle" style="margin-top:6px;">
+            The Adventurer has banished the shadows and claimed eternal peace upon the Sanctuary Throne.
+          </p>
+        </div>
+
+        <div class="victory-stats-grid">
+          <div class="victory-stat-cell">
+            <span class="victory-stat-lbl">Time</span>
+            <span id="victory-time-text" class="victory-stat-val font-mono-num">00:00</span>
+          </div>
+          <div class="victory-stat-cell">
+            <span class="victory-stat-lbl">Tokens</span>
+            <span id="victory-tokens-text" class="victory-stat-val font-mono-num" style="color:#fcd34d;">0</span>
+          </div>
+        </div>
+
+        <div class="modal-actions-row">
+          <button id="btn-victory-lobby" type="button" class="btn-ghost">Main Lobby</button>
+          <button id="btn-victory-restart" type="button" class="btn-gold">Play Again</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         7. PORTRAIT WARNING OVERLAY (Force Landscape Mode)
+         ========================================================= -->
+    <div id="portrait-warning-overlay" class="portrait-warning-overlay" role="alert" aria-live="assertive">
+      <div class="rotate-phone-box">
+        <svg class="rotate-phone-svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="2" width="12" height="20" rx="2" ry="2"/>
+          <line x1="12" y1="18" x2="12.01" y2="18"/>
+        </svg>
+      </div>
+      <h2 class="portrait-title">Landscape Required</h2>
+      <p class="portrait-desc">Please rotate your device to Landscape mode to play.</p>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =========================================================
+         Canvas roundRect Fallback for Legacy Mobile WebViews
+         ========================================================= */
+      if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+          var rad = typeof r === 'number' ? r : (Array.isArray(r) ? (r[0] || 0) : 0);
+          rad = Math.min(rad, Math.abs(w) / 2, Math.abs(h) / 2);
+          this.moveTo(x + rad, y);
+          this.arcTo(x + w, y, x + w, y + h, rad);
+          this.arcTo(x + w, y + h, x, y + h, rad);
+          this.arcTo(x, y + h, x, y, rad);
+          this.arcTo(x, y, x + w, y, rad);
+          this.closePath();
+          return this;
+        };
+      }
+
+      /* =========================================================
+         Constants & Persistent Storage
+         ========================================================= */
+      var MAX_HP = 100;
+      var MAX_AMMO = 12;
+      var TOTAL_HEARTS = 5;
+      var TILE_SIZE = 64;
+      var ARENA_OFFSET = 50;
+      var MAX_CAMPAIGN_LEVEL = 10;
+      var CHAPTERS_PER_LEVEL = 3;
+      var SNAP_COST = 50;
+      var BLASTER_COST = 150;
+      var SAVE_KEY = 'haven_sanctuary_save_v1';
+
+      var LEVEL_BIOME_NAMES = [
+        'Sunlit Courtyard',
+        'Clouded Gardens',
+        'Windward Bastion',
+        'Gilded Watchtower',
+        'Dusky Labyrinth',
+        'Obsidian Cloister',
+        'Whispering Nave',
+        'Arcane Reliquary',
+        'Twilight Citadel',
+        'Abyssal Threshold'
+      ];
+
+      var ADVENTURER_DEF = {
+        primaryColor: '#3B82F6',
+        secondaryColor: '#E2E8F0',
+        haloColor: '#FDE047',
+        wingColor: '#FFFFFF',
+        wingTrim: '#60A5FA',
+        auraGlow: 'rgba(59, 130, 246, 0.35)'
+      };
+
+      function loadProgress() {
+        try {
+          var raw = localStorage.getItem(SAVE_KEY);
+          if (!raw) return { tokens: 0, snapCount: 0, hasOneShotBlaster: false, bestLevel: 1, bestChapter: 1 };
+          var parsed = JSON.parse(raw);
+          return {
+            tokens: typeof parsed.tokens === 'number' && parsed.tokens >= 0 ? Math.floor(parsed.tokens) : 0,
+            snapCount: typeof parsed.snapCount === 'number' && parsed.snapCount >= 0 ? Math.floor(parsed.snapCount) : 0,
+            hasOneShotBlaster: Boolean(parsed.hasOneShotBlaster),
+            bestLevel: typeof parsed.bestLevel === 'number' && parsed.bestLevel >= 1 && parsed.bestLevel <= MAX_CAMPAIGN_LEVEL ? Math.floor(parsed.bestLevel) : 1,
+            bestChapter: typeof parsed.bestChapter === 'number' && parsed.bestChapter >= 1 && parsed.bestChapter <= CHAPTERS_PER_LEVEL ? Math.floor(parsed.bestChapter) : 1
+          };
+        } catch (err) {
+          return { tokens: 0, snapCount: 0, hasOneShotBlaster: false, bestLevel: 1, bestChapter: 1 };
+        }
+      }
+
+      function saveProgress() {
+        try {
+          localStorage.setItem(SAVE_KEY, JSON.stringify({
+            tokens: state.tokens,
+            snapCount: state.snapCount,
+            hasOneShotBlaster: state.hasOneShotBlaster,
+            bestLevel: state.bestLevel,
+            bestChapter: state.bestChapter
+          }));
+        } catch (err) {
+          // Ignore storage restrictions
+        }
+      }
+
+      /* =========================================================
+         Web Audio Synthesizer (Zero External Files)
+         ========================================================= */
+      var SoundEngine = {
+        ctx: null,
+        bgOscillators: [],
+        bgGain: null,
+        isBgmPlaying: false,
+
+        initCtx: function () {
+          try {
+            if (!this.ctx) {
+              var AudioCtx = window.AudioContext || window.webkitAudioContext;
+              if (AudioCtx) this.ctx = new AudioCtx();
+            }
+            if (this.ctx && this.ctx.state === 'suspended') {
+              this.ctx.resume().catch(function () {});
+            }
+          } catch (e) {}
+        },
+
+        playTone: function (type, freqStart, freqEnd, duration, vol, delay) {
+          this.initCtx();
+          if (!this.ctx) return;
+          try {
+            var now = this.ctx.currentTime + (delay || 0);
+            var osc = this.ctx.createOscillator();
+            var gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freqStart, now);
+            if (freqEnd && freqEnd !== freqStart) {
+              osc.frequency.exponentialRampToValueAtTime(freqEnd, now + duration * 0.75);
+            }
+            gain.gain.setValueAtTime(vol, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration + 0.03);
+          } catch (e) {}
+        },
+
+        playSwitchPress: function () {
+          this.playTone('sine', 523.25, 659.25, 0.35, 0.16, 0);
+        },
+
+        playShoot: function () {
+          this.initCtx();
+          if (!this.ctx) return;
+          try {
+            var now = this.ctx.currentTime;
+            var osc = this.ctx.createOscillator();
+            var gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.exponentialRampToValueAtTime(1760, now + 0.05);
+            osc.frequency.exponentialRampToValueAtTime(440, now + 0.18);
+            gain.gain.setValueAtTime(0.16, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.22);
+          } catch (e) {}
+        },
+
+        playEnemyHit: function () {
+          this.playTone('sawtooth', 260, 110, 0.1, 0.14, 0);
+        },
+
+        playEnemyDefeated: function () {
+          var notes = [659.25, 880, 1174.66];
+          for (var i = 0; i < notes.length; i++) {
+            this.playTone('sine', notes[i], notes[i] * 1.4, 0.32, 0.12, i * 0.04);
+          }
+        },
+
+        playCoin: function () {
+          this.playTone('sine', 987.77, 1318.51, 0.32, 0.14, 0);
+        },
+
+        playKeyPickup: function () {
+          var notes = [523.25, 659.25, 783.99, 1046.5];
+          for (var i = 0; i < notes.length; i++) {
+            this.playTone('triangle', notes[i], notes[i], 0.48, 0.14, i * 0.07);
+          }
+        },
+
+        playGateUnlock: function () {
+          var notes = [523.25, 659.25, 783.99, 987.77, 1046.5];
+          for (var i = 0; i < notes.length; i++) {
+            this.playTone('triangle', notes[i], notes[i], 0.75, 0.14, i * 0.09);
+          }
+        },
+
+        playShopPurchase: function () {
+          var notes = [440, 554.37, 659.25, 880];
+          for (var i = 0; i < notes.length; i++) {
+            this.playTone('sine', notes[i], notes[i], 0.42, 0.12, i * 0.05);
+          }
+        },
+
+        playHavenAscension: function () {
+          var chord = [261.63, 329.63, 392.0, 493.88, 587.33, 783.99, 987.77, 1046.5];
+          for (var i = 0; i < chord.length; i++) {
+            this.playTone('sine', chord[i], chord[i], 1.6, 0.13, i * 0.12);
+          }
+        },
+
+        startAmbientBgm: function () {
+          if (this.isBgmPlaying) return;
+          this.initCtx();
+          if (!this.ctx) return;
+          try {
+            this.bgGain = this.ctx.createGain();
+            this.bgGain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+            this.bgGain.connect(this.ctx.destination);
+            var freqs = [130.81, 196.0, 261.63];
+            for (var i = 0; i < freqs.length; i++) {
+              var osc = this.ctx.createOscillator();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(freqs[i], this.ctx.currentTime);
+              osc.connect(this.bgGain);
+              osc.start();
+              this.bgOscillators.push(osc);
+            }
+            this.isBgmPlaying = true;
+          } catch (e) {}
+        },
+
+        stopAmbientBgm: function () {
+          for (var i = 0; i < this.bgOscillators.length; i++) {
+            try {
+              this.bgOscillators[i].stop();
+              this.bgOscillators[i].disconnect();
+            } catch (e) {}
+          }
+          this.bgOscillators = [];
+          this.isBgmPlaying = false;
+        }
+      };
+
+      /* =========================================================
+         Procedural Room Generator (10 Levels x 3 Chapters, BFS-Verified)
+         ========================================================= */
+      function createArchetypeEnemy(id, archetype, pos, waypoints, levelNum, chapterNum, dropsKey) {
+        var stage = (levelNum - 1) * CHAPTERS_PER_LEVEL + chapterNum;
+        var chapterBoost = (chapterNum - 1) * 0.15;
+
+        if (archetype === 'boss') {
+          var bossHp = Math.round(18 + levelNum * 1.4 + chapterNum * 2);
+          return {
+            id: id,
+            name: levelNum === 10 ? 'Dreadlord of Haven' : 'Archon of Shadow',
+            x: pos.x,
+            y: pos.y,
+            vx: 0,
+            vy: 0,
+            radius: 29,
+            hp: bossHp,
+            maxHp: bossHp,
+            damage: 28,
+            speed: 98 + levelNum * 2,
+            waypoints: waypoints,
+            currentWaypoint: 0,
+            isDefeated: false,
+            dropsKey: dropsKey,
+            tokenDropCount: 10,
+            hitFlash: 0,
+            type: 'boss',
+            isBoss: true,
+            shootCooldown: 1.65,
+            shootTimer: 0.9
+          };
+        }
+
+        if (archetype === 'tank') {
+          var tankHp = Math.round(6 + levelNum * 0.8 + chapterNum);
+          return {
+            id: id,
+            name: 'Obsidian Warden',
+            x: pos.x,
+            y: pos.y,
+            vx: 0,
+            vy: 0,
+            radius: 24,
+            hp: tankHp,
+            maxHp: tankHp,
+            damage: Math.min(34, 18 + levelNum),
+            speed: 68 + Math.min(35, stage * 1.1),
+            waypoints: waypoints,
+            currentWaypoint: 0,
+            isDefeated: false,
+            dropsKey: dropsKey,
+            tokenDropCount: 5,
+            hitFlash: 0,
+            type: 'tank',
+            isBoss: false
+          };
+        }
+
+        if (archetype === 'rusher') {
+          var rusherHp = Math.max(2, Math.round(2 + levelNum * 0.35 + chapterBoost));
+          return {
+            id: id,
+            name: 'Swift Shade',
+            x: pos.x,
+            y: pos.y,
+            vx: 0,
+            vy: 0,
+            radius: 15,
+            hp: rusherHp,
+            maxHp: rusherHp,
+            damage: Math.min(28, 12 + levelNum),
+            speed: Math.min(210, 138 + stage * 2.2),
+            waypoints: waypoints,
+            currentWaypoint: 0,
+            isDefeated: false,
+            dropsKey: dropsKey,
+            tokenDropCount: 3,
+            hitFlash: 0,
+            type: 'rusher',
+            isBoss: false
+          };
+        }
+
+        if (archetype === 'ranged') {
+          var rangedHp = Math.max(3, Math.round(2 + levelNum * 0.45 + chapterBoost));
+          return {
+            id: id,
+            name: 'Void Acolyte',
+            x: pos.x,
+            y: pos.y,
+            vx: 0,
+            vy: 0,
+            radius: 18,
+            hp: rangedHp,
+            maxHp: rangedHp,
+            damage: Math.min(26, 14 + levelNum),
+            speed: Math.min(120, 74 + stage * 1.2),
+            waypoints: waypoints,
+            currentWaypoint: 0,
+            isDefeated: false,
+            dropsKey: dropsKey,
+            tokenDropCount: 4,
+            hitFlash: 0,
+            type: 'ranged',
+            isBoss: false,
+            shootCooldown: Math.max(1.45, 2.5 - levelNum * 0.08),
+            shootTimer: 0.6 + Math.random() * 1.0
+          };
+        }
+
+        var baseHp = Math.max(2, Math.round(1.5 + levelNum * 0.45 + chapterBoost));
+        return {
+          id: id,
+          name: 'Shadow Spirit',
+          x: pos.x,
+          y: pos.y,
+          vx: 0,
+          vy: 0,
+          radius: 17,
+          hp: baseHp,
+          maxHp: baseHp,
+          damage: Math.min(28, 12 + levelNum * 1.2),
+          speed: Math.min(165, 82 + stage * 2.4),
+          waypoints: waypoints,
+          currentWaypoint: 0,
+          isDefeated: false,
+          dropsKey: dropsKey,
+          tokenDropCount: 3,
+          hitFlash: 0,
+          type: 'dark_spirit',
+          isBoss: false
+        };
+      }
+
+      function generateProceduralRoom(levelNum, chapterNum) {
+        var safeLevel = Math.max(1, Math.min(MAX_CAMPAIGN_LEVEL, levelNum));
+        var safeChapter = Math.max(1, Math.min(CHAPTERS_PER_LEVEL, chapterNum));
+        var stage = (safeLevel - 1) * CHAPTERS_PER_LEVEL + safeChapter;
+
+        var cols = safeLevel <= 2 ? 15 : safeLevel <= 6 ? 17 : 19;
+        var rows = safeLevel <= 2 ? 11 : safeLevel <= 6 ? 12 : 13;
+
+        var width = ARENA_OFFSET * 2 + cols * TILE_SIZE;
+        var height = ARENA_OFFSET * 2 + rows * TILE_SIZE;
+
+        var gateCol = Math.floor(cols / 2);
+        var spawnCol = gateCol;
+        var spawnRow = rows - 2;
+
+        var theme = safeLevel <= 2
+          ? 'courtyard'
+          : safeLevel <= 4
+          ? (safeChapter === 3 ? 'haven' : 'courtyard')
+          : safeLevel <= 8
+          ? 'cloister'
+          : (safeChapter === 3 ? 'haven' : 'cloister');
+
+        var wallPalette = safeLevel <= 2
+          ? ['hedge', 'cloud', 'marble']
+          : safeLevel <= 4
+          ? ['marble', 'hedge', 'cloud']
+          : safeLevel <= 8
+          ? ['marble', 'marble', 'cloud']
+          : ['marble'];
+
+        var grid = [];
+        var wallTypes = [];
+        var reachableTiles = [];
+
+        function runBfs() {
+          var visited = [];
+          for (var r = 0; r < rows; r++) visited.push(new Array(cols).fill(false));
+          var queue = [{ c: spawnCol, r: spawnRow }];
+          visited[spawnRow][spawnCol] = true;
+          var tiles = [];
+          var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+          while (queue.length > 0) {
+            var curr = queue.shift();
+            tiles.push(curr);
+            for (var d = 0; d < dirs.length; d++) {
+              var nc = curr.c + dirs[d][0];
+              var nr = curr.r + dirs[d][1];
+              if (nr >= 1 && nr < rows - 1 && nc >= 1 && nc < cols - 1 && !visited[nr][nc] && grid[nr][nc] === 0) {
+                visited[nr][nc] = true;
+                queue.push({ c: nc, r: nr });
+              }
+            }
+          }
+          return { visited: visited, tiles: tiles };
+        }
+
+        for (var attempt = 0; attempt < 30; attempt++) {
+          grid = [];
+          wallTypes = [];
+          for (var r = 0; r < rows; r++) {
+            grid.push(new Array(cols).fill(0));
+            wallTypes.push(new Array(cols).fill('marble'));
+          }
+
+          for (var r = 0; r < rows; r++) {
+            for (var c = 0; c < cols; c++) {
+              if (r === 0 || r === rows - 1 || c === 0 || c === cols - 1) {
+                grid[r][c] = 1;
+                wallTypes[r][c] = 'marble';
+              }
+            }
+          }
+
+          for (var c = 1; c < cols - 1; c++) {
+            if (c === gateCol - 2 || c === gateCol + 2) {
+              grid[1][c] = 1;
+              grid[2][c] = 1;
+            }
+          }
+          grid[2][gateCol] = 2;
+          grid[2][gateCol - 1] = 1;
+          grid[2][gateCol + 1] = 1;
+
+          var baseDensity = safeLevel <= 2
+            ? 0.08 + safeChapter * 0.015
+            : safeLevel <= 4
+            ? 0.14 + safeChapter * 0.02
+            : safeLevel <= 6
+            ? 0.21 + safeChapter * 0.02
+            : safeLevel <= 8
+            ? 0.22 + safeChapter * 0.02
+            : 0.25 + safeChapter * 0.02;
+
+          var useSymmetric = attempt % 2 === 0 && safeLevel < 5;
+
+          for (var r = 3; r < rows - 2; r++) {
+            for (var c = 2; c < cols - 2; c++) {
+              var nearSpawn = r >= spawnRow - 1 && Math.abs(c - spawnCol) <= 1;
+              var nearGateApproach = r === 3 && Math.abs(c - gateCol) <= 1;
+              if (nearSpawn || nearGateApproach) continue;
+              if (useSymmetric && c > gateCol) continue;
+
+              if (Math.random() < baseDensity) {
+                var wType = wallPalette[Math.floor(Math.random() * wallPalette.length)];
+                grid[r][c] = 1;
+                wallTypes[r][c] = wType;
+
+                if (useSymmetric) {
+                  var mirrorC = cols - 1 - c;
+                  if (Math.abs(mirrorC - spawnCol) > 1 || r < spawnRow - 1) {
+                    grid[r][mirrorC] = 1;
+                    wallTypes[r][mirrorC] = wType;
+                  }
+                }
+              }
+            }
+          }
+
+          if (safeLevel >= 5) {
+            var mazeRows = safeLevel >= 9 ? [4, 7, rows - 4] : [Math.floor(rows * 0.5)];
+            for (var mi = 0; mi < mazeRows.length; mi++) {
+              var mr = mazeRows[mi];
+              if (mr <= 3 || mr >= rows - 2) continue;
+              var gapA = 2 + Math.floor(Math.random() * 3);
+              var gapB = cols - 3 - Math.floor(Math.random() * 3);
+              for (var c = 2; c < cols - 2; c++) {
+                if (c === gapA || c === gapB || c === gateCol) continue;
+                if (Math.random() < 0.72) {
+                  grid[mr][c] = 1;
+                  wallTypes[mr][c] = 'marble';
+                }
+              }
+            }
+          }
+
+          var bfs = runBfs();
+          reachableTiles = bfs.tiles;
+          if (bfs.visited[3][gateCol] && reachableTiles.length >= Math.floor((cols - 2) * (rows - 3) * 0.48)) {
+            break;
+          }
+
+          // Final fallback safety: carve central spine if 30th attempt blocked
+          if (attempt === 29) {
+            for (var cr = 3; cr <= spawnRow; cr++) {
+              grid[cr][gateCol] = 0;
+              grid[cr][gateCol - 1] = 0;
+            }
+            reachableTiles = runBfs().tiles;
+          }
+        }
+
+        function tileCenter(c, r) {
+          return {
+            x: ARENA_OFFSET + c * TILE_SIZE + TILE_SIZE / 2,
+            y: ARENA_OFFSET + r * TILE_SIZE + TILE_SIZE / 2
+          };
+        }
+
+        // Merge horizontal walls
+        var walls = [];
+        var consumed = [];
+        for (var r = 0; r < rows; r++) consumed.push(new Array(cols).fill(false));
+
+        for (var r = 0; r < rows; r++) {
+          for (var c = 0; c < cols; c++) {
+            if (grid[r][c] !== 1 || consumed[r][c]) continue;
+            var type = wallTypes[r][c];
+            var runEnd = c;
+            while (runEnd + 1 < cols && grid[r][runEnd + 1] === 1 && !consumed[r][runEnd + 1] && wallTypes[r][runEnd + 1] === type) {
+              runEnd++;
+            }
+            for (var k = c; k <= runEnd; k++) consumed[r][k] = true;
+
+            var isPerimeter = r === 0 || r === rows - 1 || c === 0 || runEnd === cols - 1;
+            var inset = isPerimeter ? 0 : 4;
+            walls.push({
+              x: ARENA_OFFSET + c * TILE_SIZE + inset,
+              y: ARENA_OFFSET + r * TILE_SIZE + inset,
+              width: (runEnd - c + 1) * TILE_SIZE - inset * 2,
+              height: TILE_SIZE - inset * 2,
+              type: type
+            });
+          }
+        }
+
+        var candidates = reachableTiles.filter(function (t) {
+          return t.r >= 3 && Math.hypot(t.c - spawnCol, t.r - spawnRow) >= 2.7;
+        });
+        var shuffled = candidates.slice().sort(function () { return Math.random() - 0.5; });
+
+        function buildPatrolWaypoints(start) {
+          var pts = [tileCenter(start.c, start.r)];
+          var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].sort(function () { return Math.random() - 0.5; });
+          for (var i = 0; i < dirs.length; i++) {
+            var dc = dirs[i][0];
+            var dr = dirs[i][1];
+            var step = 1;
+            while (
+              step <= 3 &&
+              start.r + dr * step >= 3 &&
+              start.r + dr * step < rows - 1 &&
+              start.c + dc * step >= 1 &&
+              start.c + dc * step < cols - 1 &&
+              grid[start.r + dr * step][start.c + dc * step] === 0
+            ) {
+              step++;
+            }
+            if (step > 1) {
+              pts.push(tileCenter(start.c + dc * (step - 1), start.r + dr * (step - 1)));
+              break;
+            }
+          }
+          return pts;
+        }
+
+        var isMiniBossChapter = safeLevel >= 9 && safeChapter === 3;
+        var enemyCount = Math.min(10, 2 + Math.floor(safeLevel * 0.6) + (safeChapter - 1));
+        var requiredKeys = safeLevel <= 2 ? 1 : safeLevel <= 6 ? 2 : 3;
+        var keysFromEnemies = Math.min(requiredKeys, Math.max(1, Math.ceil(requiredKeys / 2)));
+        var keysInAlcoves = requiredKeys - keysFromEnemies;
+
+        var roster = [];
+        if (isMiniBossChapter) roster.push('boss');
+        while (roster.length < enemyCount) {
+          var idx = roster.length;
+          if (safeLevel <= 2) {
+            roster.push('dark_spirit');
+          } else if (safeLevel <= 4) {
+            roster.push(idx % 2 === 0 ? 'rusher' : 'dark_spirit');
+          } else if (safeLevel <= 6) {
+            if (idx === 0 || idx % 3 === 1) roster.push('tank');
+            else if (idx % 2 === 0) roster.push('rusher');
+            else roster.push('dark_spirit');
+          } else if (safeLevel <= 8) {
+            if (idx % 3 === 0) roster.push('ranged');
+            else if (idx % 3 === 1) roster.push('tank');
+            else roster.push('rusher');
+          } else {
+            var pool = ['ranged', 'tank', 'rusher', 'dark_spirit'];
+            roster.push(pool[idx % pool.length]);
+          }
+        }
+
+        var enemies = [];
+        var usedEnemyTiles = {};
+        for (var i = 0; i < roster.length && shuffled.length > 0; i++) {
+          var tile = shuffled.pop();
+          usedEnemyTiles[tile.c + ',' + tile.r] = true;
+          enemies.push(createArchetypeEnemy(
+            'lvl' + safeLevel + '_ch' + safeChapter + '_e' + i,
+            roster[i],
+            tileCenter(tile.c, tile.r),
+            buildPatrolWaypoints(tile),
+            safeLevel,
+            safeChapter,
+            i < keysFromEnemies
+          ));
+        }
+
+        var items = [];
+        var remainingTiles = candidates.filter(function (t) {
+          return !usedEnemyTiles[t.c + ',' + t.r];
+        }).sort(function () { return Math.random() - 0.5; });
+
+        function takeTile() {
+          if (remainingTiles.length > 0) return remainingTiles.pop();
+          return { c: spawnCol + (Math.random() > 0.5 ? 1 : -1), r: spawnRow };
+        }
+
+        for (var k = 0; k < keysInAlcoves; k++) {
+          var kt = takeTile();
+          var kp = tileCenter(kt.c, kt.r);
+          items.push({ id: 'key_' + k, type: 'key', x: kp.x, y: kp.y, value: 1, collected: false });
+        }
+
+        var ammoCount = 2 + (safeLevel >= 5 ? 1 : 0);
+        for (var a = 0; a < ammoCount; a++) {
+          var at = takeTile();
+          var ap = tileCenter(at.c, at.r);
+          items.push({ id: 'ammo_' + a, type: 'ammo', x: ap.x, y: ap.y, value: 6, collected: false });
+        }
+
+        var ht = takeTile();
+        var hpPos = tileCenter(ht.c, ht.r);
+        items.push({ id: 'heal_0', type: 'heal', x: hpPos.x, y: hpPos.y, value: 35, collected: false });
+
+        var tokenVal = 5 + Math.floor(stage * 0.6);
+        var tokenSpots = 2 + (safeLevel >= 4 ? 1 : 0);
+        for (var tok = 0; tok < tokenSpots; tok++) {
+          var tt = takeTile();
+          var tp = tileCenter(tt.c, tt.r);
+          items.push({ id: 'tok_' + tok, type: 'token', x: tp.x, y: tp.y, value: tokenVal, collected: false });
+        }
+
+        var flowerPads = remainingTiles.slice(0, 4).map(function (t) {
+          var p = tileCenter(t.c, t.r);
+          return { x: p.x, y: p.y, radius: 22 };
+        });
+
+        var gateX = ARENA_OFFSET + gateCol * TILE_SIZE;
+        var gateY = ARENA_OFFSET + 2 * TILE_SIZE + 14;
+        var portalPos = tileCenter(gateCol, 1);
+        var spawnPos = tileCenter(spawnCol, spawnRow);
+        var biome = LEVEL_BIOME_NAMES[safeLevel - 1] || 'Sanctuary';
+
+        return {
+          id: stage,
+          level: safeLevel,
+          chapter: safeChapter,
+          depth: stage,
+          name: 'Level ' + safeLevel + '-' + safeChapter + ' · ' + biome,
+          subtitle: biome,
+          floorTheme: theme,
+          width: width,
+          height: height,
+          spawn: spawnPos,
+          walls: walls,
+          gates: [
+            {
+              id: 'gate_' + safeLevel + '_' + safeChapter,
+              x: gateX,
+              y: gateY,
+              width: TILE_SIZE,
+              height: 28,
+              requiresKey: true
+            }
+          ],
+          enemies: enemies,
+          items: items,
+          requiredKeys: requiredKeys,
+          exitZone: {
+            x: portalPos.x - 42,
+            y: portalPos.y - 26,
+            width: 84,
+            height: 52
+          },
+          hintText: isMiniBossChapter
+            ? 'Mini-Boss Chamber: Banish ' + (enemies[0] ? enemies[0].name : 'Archon') + ' and claim ' + requiredKeys + ' Keys.'
+            : requiredKeys === 1
+            ? 'Banish the key-bearing Shadow to unseal the north Sanctuary Gate.'
+            : 'Claim ' + requiredKeys + ' Sanctuary Keys to unseal the north gate.',
+          scenicFeatures: { flowerPads: flowerPads }
+        };
+      }
+
+      /* =========================================================
+         World Renderer (Canvas 2D)
+         ========================================================= */
+      var cloudParticles = [];
+      for (var cp = 0; cp < 26; cp++) {
+        cloudParticles.push({
+          x: Math.random() * 1200,
+          y: Math.random() * 900,
+          size: 45 + Math.random() * 70,
+          speed: 0.12 + Math.random() * 0.25,
+          opacity: 0.14 + Math.random() * 0.18
+        });
+      }
+
+      var lastCamScale = 1;
+
+      function renderGameWorld(ctx, canvas, timeSec) {
+        var lvl = state.level;
+        var p = state.player;
+        if (!lvl) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        var zoom = Math.min(canvas.width / 880, canvas.height / 700);
+        var scale = Math.max(0.58, Math.min(1.2, zoom));
+        lastCamScale = scale;
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(scale, scale);
+        ctx.translate(-p.x, -p.y);
+
+        // 1. Floor
+        var bgGrad = ctx.createLinearGradient(0, 0, lvl.width, lvl.height);
+        if (lvl.floorTheme === 'cloister') {
+          bgGrad.addColorStop(0, '#312e81');
+          bgGrad.addColorStop(0.5, '#1e293b');
+          bgGrad.addColorStop(1, '#3b0764');
+        } else if (lvl.floorTheme === 'haven') {
+          bgGrad.addColorStop(0, '#fef3c7');
+          bgGrad.addColorStop(0.5, '#d1fae5');
+          bgGrad.addColorStop(1, '#bae6fd');
+        } else {
+          bgGrad.addColorStop(0, '#bae6fd');
+          bgGrad.addColorStop(0.5, '#e0f2fe');
+          bgGrad.addColorStop(1, '#fef3c7');
+        }
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(-350, -350, lvl.width + 700, lvl.height + 700);
+
+        for (var x = 60; x < lvl.width - 60; x += TILE_SIZE) {
+          for (var y = 60; y < lvl.height - 60; y += TILE_SIZE) {
+            var isAlt = (Math.floor(x / TILE_SIZE) + Math.floor(y / TILE_SIZE)) % 2 === 0;
+            if (lvl.floorTheme === 'cloister') {
+              ctx.fillStyle = isAlt ? 'rgba(51, 65, 85, 0.72)' : 'rgba(30, 41, 59, 0.65)';
+            } else if (lvl.floorTheme === 'haven') {
+              ctx.fillStyle = isAlt ? 'rgba(255, 255, 255, 0.85)' : 'rgba(254, 249, 195, 0.55)';
+            } else {
+              ctx.fillStyle = isAlt ? 'rgba(255, 255, 255, 0.75)' : 'rgba(240, 249, 255, 0.52)';
+            }
+            ctx.beginPath();
+            ctx.roundRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4, 8);
+            ctx.fill();
+
+            if (isAlt) {
+              ctx.strokeStyle = lvl.floorTheme === 'cloister' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(253, 224, 71, 0.4)';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(x + 8, y + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+              ctx.fillStyle = lvl.floorTheme === 'cloister' ? 'rgba(192, 132, 252, 0.22)' : 'rgba(234, 179, 8, 0.25)';
+              ctx.fillRect(x + TILE_SIZE / 2 - 1, y + TILE_SIZE / 2 - 4, 2, 8);
+              ctx.fillRect(x + TILE_SIZE / 2 - 4, y + TILE_SIZE / 2 - 1, 8, 2);
+            }
+          }
+        }
+
+        // Ambient golden floor motes
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.36)';
+        for (var m = 0; m < 18; m++) {
+          var mx = ((m * 73 + timeSec * 16) % (lvl.width - 120)) + 60;
+          var my = ((m * 59 + Math.sin(timeSec + m) * 20) % (lvl.height - 120)) + 60;
+          ctx.beginPath();
+          ctx.arc(mx, my, 2 + (m % 2), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 2. Flower Pads
+        var pads = lvl.scenicFeatures.flowerPads;
+        for (var i = 0; i < pads.length; i++) {
+          var pad = pads[i];
+          ctx.save();
+          ctx.fillStyle = 'rgba(167, 243, 208, 0.65)';
+          ctx.beginPath();
+          ctx.arc(pad.x, pad.y, pad.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#6EE7B7';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#F59E0B';
+          ctx.beginPath();
+          ctx.arc(pad.x, pad.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 3. Wall Shadows & Walls
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.14)';
+        for (var i = 0; i < lvl.walls.length; i++) {
+          var w = lvl.walls[i];
+          ctx.beginPath();
+          ctx.roundRect(w.x + 8, w.y + 12, w.width, w.height, 8);
+          ctx.fill();
+        }
+        ctx.restore();
+
+        for (var i = 0; i < lvl.walls.length; i++) {
+          var w = lvl.walls[i];
+          ctx.save();
+          if (w.type === 'hedge') {
+            ctx.fillStyle = '#34D399';
+            ctx.strokeStyle = '#059669';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(w.x, w.y, w.width, w.height, 8);
+            ctx.fill();
+            ctx.stroke();
+          } else if (w.type === 'marble') {
+            var wGrad = ctx.createLinearGradient(w.x, w.y, w.x, w.y + w.height);
+            wGrad.addColorStop(0, '#FFFFFF');
+            wGrad.addColorStop(0.7, '#F1F5F9');
+            wGrad.addColorStop(1, '#CBD5E1');
+            ctx.fillStyle = wGrad;
+            ctx.strokeStyle = '#94A3B8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(w.x, w.y, w.width, w.height, 6);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#F59E0B';
+            ctx.fillRect(w.x + 2, w.y + 2, w.width - 4, 3);
+            ctx.fillRect(w.x + 2, w.y + w.height - 5, w.width - 4, 3);
+          } else {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+            ctx.strokeStyle = 'rgba(186, 230, 253, 0.85)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(w.x, w.y, w.width, w.height, 12);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // 4. Golden Gates
+        for (var i = 0; i < lvl.gates.length; i++) {
+          var g = lvl.gates[i];
+          var isOpen = Boolean(state.gatesState[g.id]);
+          ctx.save();
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.16)';
+          ctx.fillRect(g.x, g.y + g.height, g.width, 10);
+
+          var pw = 18;
+          ctx.fillStyle = '#F59E0B';
+          ctx.strokeStyle = '#D97706';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(g.x - pw, g.y - 10, pw, g.height + 20, 4);
+          ctx.roundRect(g.x + g.width, g.y - 10, pw, g.height + 20, 4);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#FFD700';
+          ctx.beginPath();
+          ctx.arc(g.x - pw / 2, g.y - 12, 10, 0, Math.PI * 2);
+          ctx.arc(g.x + g.width + pw / 2, g.y - 12, 10, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (isOpen) {
+            var openGrad = ctx.createLinearGradient(g.x, g.y, g.x, g.y + g.height);
+            openGrad.addColorStop(0, 'rgba(254, 240, 138, 0.85)');
+            openGrad.addColorStop(1, 'rgba(186, 230, 253, 0.4)');
+            ctx.fillStyle = openGrad;
+            ctx.fillRect(g.x, g.y, g.width, g.height);
+            ctx.fillStyle = '#059669';
+            ctx.font = 'bold 12px Cinzel, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('OPEN', g.x + g.width / 2, g.y - 18);
+          } else {
+            var gGrad = ctx.createLinearGradient(g.x, g.y, g.x + g.width, g.y + g.height);
+            gGrad.addColorStop(0, '#FFD700');
+            gGrad.addColorStop(0.5, '#F59E0B');
+            gGrad.addColorStop(1, '#B45309');
+            ctx.fillStyle = gGrad;
+            ctx.shadowColor = '#FBBF24';
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.roundRect(g.x, g.y, g.width, g.height, 4);
+            ctx.fill();
+
+            ctx.strokeStyle = '#FEF3C7';
+            ctx.lineWidth = 3;
+            for (var bx = g.x + 15; bx < g.x + g.width - 10; bx += 18) {
+              ctx.beginPath();
+              ctx.moveTo(bx, g.y + 2);
+              ctx.lineTo(bx, g.y + g.height - 2);
+              ctx.stroke();
+            }
+
+            var gcx = g.x + g.width / 2;
+            var gcy = g.y + g.height / 2;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(gcx, gcy, 13, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#B45309';
+            ctx.font = 'bold 12px Cinzel, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('KEY', gcx, gcy + 0.5);
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.strokeStyle = '#F59E0B';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(gcx - 64, g.y - 34, 128, 22, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#FEF08A';
+            ctx.font = 'bold 10px Montserrat, sans-serif';
+            ctx.fillText('Locked · Key Required', gcx, g.y - 23);
+          }
+          ctx.restore();
+        }
+
+        // 5. Items
+        for (var i = 0; i < state.items.length; i++) {
+          var item = state.items[i];
+          if (item.collected) continue;
+          ctx.save();
+          var fy = item.y + Math.sin(timeSec * 4 + item.x) * 4;
+          ctx.translate(item.x, fy);
+
+          if (item.type === 'key') {
+            var ringPulse = 18 + Math.sin(timeSec * 5) * 4;
+            ctx.strokeStyle = '#FBBF24';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#F59E0B';
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.ellipse(0, 10, ringPulse, ringPulse * 0.45, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Crisp painted golden key silhouette (no emoji variance across OS)
+            ctx.fillStyle = '#FACC15';
+            ctx.strokeStyle = '#FEF08A';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(-6, -3, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillRect(0, -5, 13, 4);
+            ctx.fillRect(7, -1, 3, 4);
+            ctx.fillRect(11, -1, 3, 5);
+
+            ctx.fillStyle = '#FEF08A';
+            ctx.font = 'bold 10px Cinzel, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('GOLDEN KEY', 0, -22);
+          } else if (item.type === 'token') {
+            ctx.shadowColor = '#F59E0B';
+            ctx.shadowBlur = 12;
+            ctx.fillStyle = '#F59E0B';
+            ctx.beginPath();
+            ctx.arc(0, 0, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FEF08A';
+            ctx.beginPath();
+            ctx.arc(0, 0, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#78350F';
+            ctx.font = 'bold 11px Cinzel, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('T', 0, 1);
+          } else if (item.type === 'ammo') {
+            ctx.shadowColor = '#38BDF8';
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = '#0EA5E9';
+            ctx.beginPath();
+            ctx.moveTo(0, -13);
+            ctx.lineTo(10, 0);
+            ctx.lineTo(0, 13);
+            ctx.lineTo(-10, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#E0F2FE';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 9px Montserrat, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('AMMO', 0, -18);
+          } else if (item.type === 'heal') {
+            ctx.shadowColor = '#10B981';
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = '#10B981';
+            ctx.beginPath();
+            ctx.arc(0, 0, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(-2, -6, 4, 12);
+            ctx.fillRect(-6, -2, 12, 4);
+            ctx.font = 'bold 9px Montserrat, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('+HP', 0, -18);
+          }
+          ctx.restore();
+        }
+
+        // 6. Exit Zone Portal
+        var ez = lvl.exitZone;
+        var ecx = ez.x + ez.width / 2;
+        var ecy = ez.y + ez.height / 2;
+        var isPortalOpen = lvl.gates.every(function (g) { return state.gatesState[g.id]; }) && p.keys >= lvl.requiredKeys;
+
+        ctx.save();
+        if (isPortalOpen) {
+          var pulse = 1 + Math.sin(timeSec * 5) * 0.08;
+          var outerR = Math.max(ez.width, ez.height) * 0.65 * pulse;
+          var pGrad = ctx.createRadialGradient(ecx, ecy, 4, ecx, ecy, outerR);
+          pGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+          pGrad.addColorStop(0.35, 'rgba(253, 224, 71, 0.85)');
+          pGrad.addColorStop(0.7, 'rgba(56, 189, 248, 0.55)');
+          pGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+          ctx.fillStyle = pGrad;
+          ctx.beginPath();
+          ctx.arc(ecx, ecy, outerR, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#FACC15';
+          ctx.lineWidth = 3.5;
+          ctx.shadowColor = '#FDE047';
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          ctx.ellipse(ecx, ecy, ez.width * 0.42, ez.height * 0.36, 0, 0, Math.PI * 2);
+          ctx.stroke();
+
+          for (var orb = 0; orb < 4; orb++) {
+            var ang = timeSec * 3 + (orb * Math.PI) / 2;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(ecx + Math.cos(ang) * ez.width * 0.42, ecy + Math.sin(ang) * ez.height * 0.36, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = 'bold 12px Cinzel, serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = 'rgba(0,0,0,0.85)';
+          ctx.shadowBlur = 6;
+          var portalText = lvl.level === MAX_CAMPAIGN_LEVEL && lvl.chapter === CHAPTERS_PER_LEVEL
+            ? 'CLAIM HAVEN'
+            : lvl.chapter === CHAPTERS_PER_LEVEL
+            ? 'LEVEL ' + (lvl.level + 1) + '-1'
+            : 'CHAPTER ' + lvl.level + '-' + (lvl.chapter + 1);
+          ctx.fillText(portalText, ecx, ecy);
+        } else {
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.ellipse(ecx, ecy, ez.width * 0.42, ez.height * 0.34, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#FDE047';
+          ctx.font = 'bold 11px Cinzel, serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('SEALED', ecx, ecy);
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+          ctx.strokeStyle = '#F59E0B';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect(ecx - 72, ez.y + ez.height + 6, 144, 22, 6);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#FEF08A';
+          ctx.font = 'bold 10px Montserrat, sans-serif';
+          ctx.fillText('Keys: ' + p.keys + '/' + lvl.requiredKeys, ecx, ez.y + ez.height + 17);
+        }
+        ctx.restore();
+
+        // 7. Enemies
+        for (var i = 0; i < state.enemies.length; i++) {
+          var enemy = state.enemies[i];
+          if (enemy.isDefeated) continue;
+          ctx.save();
+          ctx.translate(enemy.x, enemy.y);
+
+          ctx.fillStyle = enemy.type === 'boss' ? 'rgba(127, 29, 29, 0.36)' : 'rgba(76, 29, 149, 0.28)';
+          ctx.beginPath();
+          ctx.ellipse(0, enemy.radius + 3, enemy.radius * 0.95, 7, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          var hSpeed = enemy.type === 'rusher' ? 9 : enemy.type === 'tank' ? 2.5 : 5;
+          var hover = Math.sin(timeSec * hSpeed + enemy.x) * (enemy.type === 'tank' ? 2 : 4);
+          ctx.translate(0, hover);
+
+          var ePulse = Math.sin(timeSec * 6) * 4;
+          ctx.fillStyle =
+            enemy.type === 'boss' ? 'rgba(225, 29, 72, 0.38)' :
+            enemy.type === 'ranged' ? 'rgba(16, 185, 129, 0.28)' :
+            enemy.type === 'rusher' ? 'rgba(244, 63, 94, 0.3)' :
+            enemy.type === 'tank' ? 'rgba(51, 65, 85, 0.42)' :
+            'rgba(88, 28, 135, 0.35)';
+          ctx.beginPath();
+          ctx.arc(0, 0, enemy.radius + 6 + ePulse, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (enemy.hitFlash > 0) {
+            ctx.fillStyle = '#FFFFFF';
+          } else {
+            var bodyGrad = ctx.createRadialGradient(0, 0, 3, 0, 0, enemy.radius);
+            if (enemy.type === 'boss') {
+              bodyGrad.addColorStop(0, '#F43F5E');
+              bodyGrad.addColorStop(0.55, '#881337');
+              bodyGrad.addColorStop(1, '#0F172A');
+            } else if (enemy.type === 'tank') {
+              bodyGrad.addColorStop(0, '#64748B');
+              bodyGrad.addColorStop(0.65, '#1E293B');
+              bodyGrad.addColorStop(1, '#090D16');
+            } else if (enemy.type === 'rusher') {
+              bodyGrad.addColorStop(0, '#FB7185');
+              bodyGrad.addColorStop(0.65, '#BE123C');
+              bodyGrad.addColorStop(1, '#3B0764');
+            } else if (enemy.type === 'ranged') {
+              bodyGrad.addColorStop(0, '#34D399');
+              bodyGrad.addColorStop(0.55, '#4C1D95');
+              bodyGrad.addColorStop(1, '#0F172A');
+            } else {
+              bodyGrad.addColorStop(0, '#7C3AED');
+              bodyGrad.addColorStop(0.7, '#4C1D95');
+              bodyGrad.addColorStop(1, '#0F172A');
+            }
+            ctx.fillStyle = bodyGrad;
+          }
+          ctx.beginPath();
+          ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (enemy.type === 'tank') {
+            ctx.strokeStyle = '#94A3B8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          } else if (enemy.type === 'ranged') {
+            ctx.strokeStyle = 'rgba(52, 211, 153, 0.75)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, enemy.radius + 4, timeSec * 2, timeSec * 2 + Math.PI * 1.4);
+            ctx.stroke();
+          } else if (enemy.type === 'boss') {
+            ctx.strokeStyle = '#F59E0B';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+
+          var wispCount = enemy.type === 'boss' ? 6 : 4;
+          for (var t = 0; t < wispCount; t++) {
+            var wa = (t * Math.PI * 2) / wispCount + timeSec * (enemy.type === 'rusher' ? 6 : 3);
+            ctx.fillStyle = enemy.type === 'boss' ? 'rgba(251,191,36,0.65)' : enemy.type === 'ranged' ? 'rgba(52,211,153,0.55)' : 'rgba(147,51,234,0.5)';
+            ctx.beginPath();
+            ctx.arc(Math.cos(wa) * enemy.radius * 0.92, Math.sin(wa) * enemy.radius * 0.92, enemy.type === 'boss' ? 6 : 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          var eyeOff = enemy.type === 'boss' ? 8 : 5;
+          ctx.fillStyle = enemy.type === 'ranged' ? '#34D399' : '#F43F5E';
+          ctx.beginPath();
+          ctx.arc(-eyeOff, -2, enemy.type === 'boss' ? 3.5 : 2.5, 0, Math.PI * 2);
+          ctx.arc(eyeOff, -2, enemy.type === 'boss' ? 3.5 : 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.beginPath();
+          ctx.arc(-eyeOff, -2, 1.2, 0, Math.PI * 2);
+          ctx.arc(eyeOff, -2, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          var barW = enemy.type === 'boss' ? 58 : enemy.type === 'tank' ? 44 : 34;
+          var barH = enemy.type === 'boss' ? 7 : 5;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fillRect(-barW / 2, -enemy.radius - 16, barW, barH);
+          var hpPct = Math.max(0, enemy.hp / enemy.maxHp);
+          ctx.fillStyle = enemy.type === 'boss' ? '#F43F5E' : hpPct > 0.4 ? '#EF4444' : '#F59E0B';
+          ctx.fillRect(-barW / 2 + 1, -enemy.radius - 15, (barW - 2) * hpPct, barH - 2);
+
+          if (enemy.isBoss) {
+            ctx.fillStyle = '#FDE047';
+            ctx.font = 'bold 10px Cinzel, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(enemy.name.toUpperCase(), 0, -enemy.radius - 23);
+          }
+
+          if (enemy.dropsKey) {
+            ctx.fillStyle = '#FACC15';
+            ctx.font = 'bold 9px Cinzel, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('KEY HOLDER', 0, -enemy.radius - (enemy.isBoss ? 36 : 24));
+          }
+          ctx.restore();
+        }
+
+        // 8. Projectiles & Motion Trails
+        for (var i = 0; i < state.projectiles.length; i++) {
+          var proj = state.projectiles[i];
+          ctx.save();
+          if (proj.trail && proj.trail.length > 1) {
+            for (var ti = 1; ti < proj.trail.length; ti++) {
+              var pr0 = proj.trail[ti - 1];
+              var pr1 = proj.trail[ti];
+              var ratio = ti / proj.trail.length;
+              ctx.strokeStyle = proj.isEnemy
+                ? 'rgba(192, 38, 211, ' + (ratio * 0.72).toFixed(2) + ')'
+                : proj.isOneShot
+                ? 'rgba(244, 63, 94, ' + (ratio * 0.72).toFixed(2) + ')'
+                : 'rgba(56, 189, 248, ' + (ratio * 0.65).toFixed(2) + ')';
+              ctx.lineWidth = (proj.isOneShot ? 8 : proj.isEnemy ? 6 : 5) * ratio;
+              ctx.lineCap = 'round';
+              ctx.beginPath();
+              ctx.moveTo(pr0.x, pr0.y);
+              ctx.lineTo(pr1.x, pr1.y);
+              ctx.stroke();
+            }
+          }
+
+          ctx.translate(proj.x, proj.y);
+          ctx.rotate(proj.angle);
+          var bLen = proj.isOneShot ? 24 : proj.isEnemy ? 16 : 17;
+          var bWid = proj.isOneShot ? 7.5 : proj.isEnemy ? 6 : 5;
+          ctx.shadowColor = proj.isEnemy ? '#D946EF' : proj.isOneShot ? '#F59E0B' : '#38BDF8';
+          ctx.shadowBlur = proj.isOneShot ? 16 : 10;
+
+          var wake = ctx.createLinearGradient(-bLen, 0, bLen * 0.6, 0);
+          if (proj.isEnemy) {
+            wake.addColorStop(0, 'rgba(147,51,234,0)');
+            wake.addColorStop(0.55, 'rgba(217,70,239,0.95)');
+            wake.addColorStop(1, '#FDA4AF');
+          } else if (proj.isOneShot) {
+            wake.addColorStop(0, 'rgba(244,63,94,0)');
+            wake.addColorStop(0.55, 'rgba(245,158,11,0.95)');
+            wake.addColorStop(1, '#FEF08A');
+          } else {
+            wake.addColorStop(0, 'rgba(56,189,248,0)');
+            wake.addColorStop(0.55, 'rgba(96,165,250,0.95)');
+            wake.addColorStop(1, '#E0F2FE');
+          }
+          ctx.fillStyle = wake;
+          ctx.beginPath();
+          ctx.moveTo(bLen * 0.65, 0);
+          ctx.lineTo(-bLen * 0.35, -bWid * 0.55);
+          ctx.lineTo(-bLen * 0.9, 0);
+          ctx.lineTo(-bLen * 0.35, bWid * 0.55);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = proj.isEnemy ? '#FFE4E6' : proj.isOneShot ? '#FFFFFF' : '#F8FAFC';
+          ctx.beginPath();
+          ctx.moveTo(bLen * 0.62, 0);
+          ctx.lineTo(0, -bWid * 0.28);
+          ctx.lineTo(-bLen * 0.25, 0);
+          ctx.lineTo(0, bWid * 0.28);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 9. Particles
+        for (var i = 0; i < state.particles.length; i++) {
+          var part = state.particles[i];
+          ctx.save();
+          ctx.globalAlpha = part.alpha;
+          ctx.fillStyle = part.color;
+          ctx.shadowColor = part.color;
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.arc(part.x, part.y, part.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 10. Male Angel Player ("The Adventurer")
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        if (p.invulnerableTimer > 0 && Math.floor(timeSec * 18) % 2 === 0) {
+          ctx.globalAlpha = 0.45;
+        }
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
+        ctx.beginPath();
+        ctx.ellipse(0, 18, 18, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = ADVENTURER_DEF.auraGlow;
+        ctx.beginPath();
+        ctx.arc(0, 0, 23 + Math.sin(timeSec * 4) * 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.translate(0, Math.sin(timeSec * 4.5) * 3);
+
+        var flapAngle = Math.sin(timeSec * (p.isMoving ? 15 : 4.5)) * 0.34;
+        for (var side = -1; side <= 1; side += 2) {
+          ctx.save();
+          ctx.translate(side * 14, 0);
+          ctx.rotate(side * 0.35 - side * flapAngle);
+          ctx.fillStyle = ADVENTURER_DEF.wingColor;
+          ctx.strokeStyle = ADVENTURER_DEF.wingTrim;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.quadraticCurveTo(side * 20, -18, side * 30, -6);
+          ctx.quadraticCurveTo(side * 23, 8, side * 15, 14);
+          ctx.quadraticCurveTo(side * 6, 8, 0, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.fillStyle = ADVENTURER_DEF.secondaryColor;
+        ctx.strokeStyle = ADVENTURER_DEF.primaryColor;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(-14, -14, 28, 28, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = ADVENTURER_DEF.primaryColor;
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(9, 4);
+        ctx.lineTo(0, 12);
+        ctx.lineTo(-9, 4);
+        ctx.closePath();
+        ctx.fill();
+
+        var ex = p.facing === 'left' ? -4 : p.facing === 'right' ? 4 : 0;
+        var ey = p.facing === 'up' ? -3 : p.facing === 'down' ? 2 : 0;
+        ctx.fillStyle = '#0F172A';
+        ctx.beginPath();
+        ctx.arc(-4 + ex, -2 + ey, 2.2, 0, Math.PI * 2);
+        ctx.arc(4 + ex, -2 + ey, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(0, -21);
+        ctx.strokeStyle = ADVENTURER_DEF.haloColor;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 14, 5.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+
+        // 11. Foreground Drifting Clouds
+        for (var c = 0; c < cloudParticles.length; c++) {
+          var cpItem = cloudParticles[c];
+          ctx.save();
+          var cx = ((cpItem.x + timeSec * cpItem.speed * 25) % (lvl.width + 300)) - 150;
+          var cy = cpItem.y + Math.sin(timeSec + cpItem.size) * 8;
+          ctx.fillStyle = 'rgba(255, 255, 255, ' + cpItem.opacity + ')';
+          ctx.beginPath();
+          ctx.arc(cx, cy, cpItem.size, 0, Math.PI * 2);
+          ctx.arc(cx + cpItem.size * 0.6, cy - cpItem.size * 0.2, cpItem.size * 0.7, 0, Math.PI * 2);
+          ctx.arc(cx - cpItem.size * 0.5, cy - cpItem.size * 0.1, cpItem.size * 0.65, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        ctx.restore();
+
+        // 12. Room Transition Curtain
+        if (state.transition.progress > 0) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(255, 255, 255, ' + state.transition.progress + ')';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (state.transition.title && state.transition.progress > 0.2) {
+            ctx.fillStyle = 'rgba(30, 41, 59, ' + Math.min(1, state.transition.progress * 1.5) + ')';
+            ctx.font = '900 ' + Math.max(18, Math.min(30, canvas.width * 0.036)) + 'px Cinzel, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
+            ctx.shadowBlur = 15;
+            ctx.fillText(state.transition.title, canvas.width / 2, canvas.height / 2);
+          }
+          ctx.restore();
+        }
+      }
+
+      /* =========================================================
+         Global Game State & DOM References
+         ========================================================= */
+      var saved = loadProgress();
+      var state = {
+        screen: 'lobby', // 'lobby' | 'playing' | 'gameover' | 'victory'
+        isPaused: false,
+        tokens: saved.tokens,
+        snapCount: saved.snapCount,
+        hasOneShotBlaster: saved.hasOneShotBlaster,
+        bestLevel: saved.bestLevel,
+        bestChapter: saved.bestChapter,
+        levelNum: 1,
+        chapterNum: 1,
+        level: null,
+        player: {
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          facing: 'up',
+          isMoving: false,
+          hp: MAX_HP,
+          maxHp: MAX_HP,
+          ammo: MAX_AMMO,
+          maxAmmo: MAX_AMMO,
+          keys: 0,
+          invulnerableTimer: 0
+        },
+        gatesState: {},
+        items: [],
+        enemies: [],
+        projectiles: [],
+        particles: [],
+        portalUnlocked: false,
+        elapsedSeconds: 0,
+        displaySeconds: -1,
+        transition: { progress: 0, title: null, active: false }
+      };
+
+      var keysDown = {};
+      var touchVector = { x: 0, y: 0 };
+      var gameRafId = null;
+      var lobbyRafId = null;
+      var bannerTimeoutId = null;
+
+      // DOM lookups
+      var elLobbyScreen = document.getElementById('lobby-screen');
+      var elLobbyCanvas = document.getElementById('lobby-bg-canvas');
+      var elLobbyTokens = document.getElementById('lobby-tokens-text');
+      var elLobbyBest = document.getElementById('lobby-best-text');
+      var elLobbyWeapon = document.getElementById('lobby-weapon-text');
+      var elLobbySnap = document.getElementById('lobby-snap-text');
+
+      var elShopModal = document.getElementById('shop-modal');
+      var elShopTokens = document.getElementById('shop-tokens-text');
+      var elShopSnapOwned = document.getElementById('shop-snap-owned');
+      var elBtnBuySnap = document.getElementById('btn-buy-snap');
+      var elBtnBuyBlaster = document.getElementById('btn-buy-blaster');
+      var elBlasterEquipped = document.getElementById('blaster-equipped-badge');
+
+      var elGameStage = document.getElementById('game-stage');
+      var elGameCanvas = document.getElementById('game-canvas');
+      var elHeartsRow = document.getElementById('rpg-hearts-row');
+      var elVitalityFill = document.getElementById('vitality-fill');
+      var elHpText = document.getElementById('hud-hp-text');
+      var elRoomName = document.getElementById('hud-room-name');
+      var elTimeText = document.getElementById('hud-time-text');
+      var elShadowsText = document.getElementById('hud-shadows-text');
+      var elAmmoText = document.getElementById('hud-ammo-text');
+      var elKeysWrap = document.getElementById('hud-keys-wrap');
+      var elKeysText = document.getElementById('hud-keys-text');
+      var elBlasterTag = document.getElementById('hud-blaster-tag');
+      var elHudSnapBtn = document.getElementById('hud-snap-btn');
+      var elHudSnapLabel = document.getElementById('hud-snap-label');
+      var elHintBox = document.getElementById('hud-hint-box');
+      var elBanner = document.getElementById('hud-banner');
+      var elHudTokens = document.getElementById('hud-tokens-text');
+
+      var elVirtualControls = document.getElementById('virtual-controls');
+      var elJoystickBase = document.getElementById('joystick-base');
+      var elJoystickKnob = document.getElementById('joystick-knob');
+      var elBtnTouchSnap = document.getElementById('btn-touch-snap');
+      var elTouchSnapBadge = document.getElementById('touch-snap-badge');
+      var elBtnTouchShoot = document.getElementById('btn-touch-shoot');
+      var elTouchShootLbl = document.getElementById('touch-shoot-lbl');
+      var elTouchAmmoBadge = document.getElementById('touch-ammo-badge');
+      var elBtnTouchInteract = document.getElementById('btn-touch-interact');
+
+      var elPauseModal = document.getElementById('pause-modal');
+      var elPauseSub = document.getElementById('pause-subtitle');
+      var elGameOverModal = document.getElementById('gameover-modal');
+      var elGameOverSub = document.getElementById('gameover-subtitle');
+      var elVictoryModal = document.getElementById('victory-modal');
+      var elVictoryTime = document.getElementById('victory-time-text');
+      var elVictoryTokens = document.getElementById('victory-tokens-text');
+
+      function formatTime(sec) {
+        var mins = Math.floor(sec / 60);
+        var secs = sec % 60;
+        return (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+      }
+
+      function showBanner(msg) {
+        if (bannerTimeoutId) clearTimeout(bannerTimeoutId);
+        elBanner.textContent = msg;
+        elBanner.classList.remove('hidden');
+        bannerTimeoutId = setTimeout(function () {
+          elBanner.classList.add('hidden');
+        }, 3000);
+      }
+
+      function syncHeartsUI() {
+        var hp = state.player.hp;
+        var maxHp = state.player.maxHp;
+        var hpPerHeart = maxHp / TOTAL_HEARTS;
+        var pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+
+        var html = '';
+        for (var i = 0; i < TOTAL_HEARTS; i++) {
+          var minH = i * hpPerHeart;
+          var fullH = (i + 1) * hpPerHeart;
+          var ratio = Math.max(0, Math.min(1, (hp - minH) / (fullH - minH)));
+          var clipId = 'heartClip_' + i;
+          html +=
+            '<svg class="heart-svg" viewBox="0 0 24 22">' +
+            '<defs>' +
+            '<clipPath id="' + clipId + '"><rect x="0" y="0" width="' + (24 * ratio).toFixed(2) + '" height="22"/></clipPath>' +
+            (i === 0 ? '<linearGradient id="rubyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb7185"/><stop offset="55%" stop-color="#e11d48"/><stop offset="100%" stop-color="#881337"/></linearGradient>' : '') +
+            '</defs>' +
+            '<path d="M12 20.4C12 20.4 2 13.8 2 7.2C2 3.9 4.6 1.5 7.7 1.5C9.6 1.5 11.2 2.4 12 3.8C12.8 2.4 14.4 1.5 16.3 1.5C19.4 1.5 22 3.9 22 7.2C22 13.8 12 20.4 12 20.4Z" fill="#1e293b" stroke="#78350f" stroke-width="1.6"/>' +
+            (ratio > 0 ? '<path clip-path="url(#' + clipId + ')" d="M12 20.4C12 20.4 2 13.8 2 7.2C2 3.9 4.6 1.5 7.7 1.5C9.6 1.5 11.2 2.4 12 3.8C12.8 2.4 14.4 1.5 16.3 1.5C19.4 1.5 22 3.9 22 7.2C22 13.8 12 20.4 12 20.4Z" fill="url(#rubyGrad)"/>' : '') +
+            (ratio > 0.3 ? '<circle cx="7.5" cy="6.2" r="1.4" fill="rgba(255,255,255,0.55)"/>' : '') +
+            '</svg>';
+        }
+        elHeartsRow.innerHTML = html;
+        elVitalityFill.style.width = pct + '%';
+        elVitalityFill.style.background = pct > 45
+          ? 'linear-gradient(90deg, #e11d48, #fb7185)'
+          : 'linear-gradient(90deg, #b91c1c, #f59e0b)';
+        elHpText.textContent = hp + '/' + maxHp;
+      }
+
+      function syncUI() {
+        // Persistent tokens
+        elLobbyTokens.textContent = 'TOKENS ' + state.tokens;
+        elShopTokens.textContent = 'TOKENS ' + state.tokens;
+        elHudTokens.textContent = 'TOKENS ' + state.tokens;
+
+        // Lobby loadout
+        elLobbyBest.textContent = 'Best: Level ' + state.bestLevel + '-' + state.bestChapter;
+        elLobbyWeapon.textContent = state.hasOneShotBlaster ? 'One-Shot Blaster' : 'Standard Bolt';
+        elLobbySnap.textContent = 'Snap: ' + state.snapCount;
+
+        // Shop
+        elShopSnapOwned.textContent = 'Owned: ' + state.snapCount;
+        elBtnBuySnap.disabled = state.tokens < SNAP_COST;
+        if (state.hasOneShotBlaster) {
+          elBtnBuyBlaster.classList.add('hidden');
+          elBlasterEquipped.classList.remove('hidden');
+        } else {
+          elBtnBuyBlaster.classList.remove('hidden');
+          elBlasterEquipped.classList.add('hidden');
+          elBtnBuyBlaster.disabled = state.tokens < BLASTER_COST;
+        }
+
+        // Gameplay HUD
+        if (state.level) {
+          var p = state.player;
+          var remaining = state.enemies.filter(function (e) { return !e.isDefeated; }).length;
+          var isPortalOpen = state.level.gates.every(function (g) { return state.gatesState[g.id]; }) && p.keys >= state.level.requiredKeys;
+
+          syncHeartsUI();
+          elRoomName.textContent = state.level.name;
+          elTimeText.textContent = 'Time: ' + formatTime(Math.floor(state.elapsedSeconds));
+
+          elShadowsText.textContent = isPortalOpen ? 'Threshold Open' : 'Shadows: ' + remaining;
+          elShadowsText.className = isPortalOpen ? 'stat-emerald' : 'stat-muted';
+
+          elAmmoText.textContent = p.ammo + '/' + p.maxAmmo;
+          elTouchAmmoBadge.textContent = p.ammo + '/' + p.maxAmmo;
+          elKeysText.textContent = p.keys + '/' + state.level.requiredKeys;
+          elKeysWrap.className = 'stat-pill-inline ' + (p.keys >= state.level.requiredKeys ? 'stat-gold' : 'stat-muted');
+
+          if (state.hasOneShotBlaster) {
+            elBlasterTag.classList.remove('hidden');
+            elBtnTouchShoot.classList.add('blaster-mode');
+            elTouchShootLbl.textContent = 'Blaster';
+          } else {
+            elBlasterTag.classList.add('hidden');
+            elBtnTouchShoot.classList.remove('blaster-mode');
+            elTouchShootLbl.textContent = 'Shoot';
+          }
+
+          if (p.ammo <= 0) elBtnTouchShoot.classList.add('empty-ammo');
+          else elBtnTouchShoot.classList.remove('empty-ammo');
+
+          if (state.snapCount > 0) {
+            elHudSnapBtn.classList.remove('hidden');
+            elBtnTouchSnap.classList.remove('hidden');
+            elHudSnapLabel.textContent = 'The Snap of Doom [F] · x' + state.snapCount;
+            elTouchSnapBadge.textContent = 'x' + state.snapCount;
+          } else {
+            elHudSnapBtn.classList.add('hidden');
+            elBtnTouchSnap.classList.add('hidden');
+          }
+
+          elHintBox.textContent = state.level.hintText;
+        }
+      }
+
+      /* =========================================================
+         Lobby Background Canvas Animation (God-Rays, Misty Golden Gates, Clouds, Particles)
+         ========================================================= */
+      function startLobbyCanvas() {
+        if (lobbyRafId !== null) return;
+        var ctx = elLobbyCanvas.getContext('2d');
+        if (!ctx) return;
+
+        var width = elLobbyCanvas.width = Math.max(1, window.innerWidth);
+        var height = elLobbyCanvas.height = Math.max(1, window.innerHeight);
+
+        var motes = [];
+        for (var i = 0; i < 40; i++) {
+          motes.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            radius: Math.random() * 2.2 + 0.8,
+            speedY: -(Math.random() * 18 + 8),
+            speedX: (Math.random() - 0.5) * 12,
+            opacity: Math.random() * 0.75 + 0.25,
+            pulseSpeed: Math.random() * 2 + 1,
+            phase: Math.random() * Math.PI * 2
+          });
+        }
+
+        var clouds = [];
+        for (var i = 0; i < 12; i++) {
+          clouds.push({
+            x: (i / 12) * width,
+            y: height * (0.64 + (i % 4) * 0.08),
+            radius: 90 + (i % 3) * 45,
+            speed: 8 + (i % 3) * 5,
+            alpha: 0.08 + (i % 3) * 0.03
+          });
+        }
+
+        var startT = performance.now();
+
+        function frame(now) {
+          if (state.screen !== 'lobby') {
+            lobbyRafId = null;
+            return;
+          }
+
+          if (elLobbyCanvas.width !== window.innerWidth || elLobbyCanvas.height !== window.innerHeight) {
+            width = elLobbyCanvas.width = Math.max(1, window.innerWidth);
+            height = elLobbyCanvas.height = Math.max(1, window.innerHeight);
+          }
+
+          var elapsed = (now - startT) / 1000;
+          ctx.clearRect(0, 0, width, height);
+
+          // Dim misty Golden Gates silhouette in distant center sky
+          ctx.save();
+          var gateScale = Math.min(width / 900, height / 600);
+          ctx.translate(width * 0.5, height * 0.62);
+          ctx.scale(gateScale, gateScale);
+          ctx.globalAlpha = 0.22;
+          ctx.strokeStyle = '#FDE047';
+          ctx.lineWidth = 4;
+          // Left & right golden gate wings
+          ctx.beginPath();
+          ctx.arc(0, -10, 125, Math.PI, 0);
+          ctx.stroke();
+          for (var bar = -110; bar <= 110; bar += 22) {
+            ctx.beginPath();
+            ctx.moveTo(bar, -10 - Math.sqrt(Math.max(0, 125 * 125 - bar * bar)));
+            ctx.lineTo(bar, 120);
+            ctx.stroke();
+          }
+          // Stone gate columns
+          ctx.fillStyle = 'rgba(254, 240, 138, 0.28)';
+          ctx.fillRect(-146, -40, 22, 165);
+          ctx.fillRect(124, -40, 22, 165);
+          ctx.restore();
+
+          // Volumetric God-Rays
+          var ox = width * 0.5;
+          var oy = -30;
+          ctx.save();
+          for (var r = 0; r < 8; r++) {
+            var baseAng = ((r - 4) / 4) * 0.75 + Math.sin(elapsed * 0.4 + r * 0.8) * 0.06;
+            var rLen = Math.max(width, height) * 1.3;
+            var sp = 0.12;
+            var rayGrad = ctx.createRadialGradient(ox, oy, 40, ox, oy + height * 0.6, height * 0.9);
+            var alpha = (0.09 + Math.sin(elapsed * 0.6 + r * 1.2) * 0.04).toFixed(3);
+            rayGrad.addColorStop(0, 'rgba(255, 238, 170, ' + alpha + ')');
+            rayGrad.addColorStop(0.4, 'rgba(254, 215, 102, ' + (Number(alpha) * 0.6).toFixed(3) + ')');
+            rayGrad.addColorStop(1, 'rgba(254, 215, 102, 0)');
+            ctx.fillStyle = rayGrad;
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(ox + Math.sin(baseAng - sp) * rLen, oy + Math.cos(baseAng - sp) * rLen);
+            ctx.lineTo(ox + Math.sin(baseAng + sp) * rLen, oy + Math.cos(baseAng + sp) * rLen);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // Drifting Clouds
+          ctx.save();
+          for (var c = 0; c < clouds.length; c++) {
+            var cl = clouds[c];
+            var cx = ((cl.x + elapsed * cl.speed) % (width + cl.radius * 3)) - cl.radius * 1.5;
+            var cy = cl.y + Math.sin(elapsed * 0.5 + cl.x) * 6;
+            var cGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, cl.radius);
+            cGrad.addColorStop(0, 'rgba(255, 255, 255, ' + cl.alpha + ')');
+            cGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = cGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, cl.radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // Floating Golden Particles
+          ctx.save();
+          for (var m = 0; m < motes.length; m++) {
+            var pt = motes[m];
+            pt.y += pt.speedY * 0.016;
+            pt.x += pt.speedX * 0.016 + Math.sin(elapsed + pt.phase) * 0.3;
+            if (pt.y < -10) {
+              pt.y = height + 10;
+              pt.x = Math.random() * width;
+            }
+            var a = pt.opacity * (0.6 + 0.4 * Math.sin(elapsed * pt.pulseSpeed + pt.phase));
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.radius * 2.8, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(254, 240, 138, ' + (a * 0.25) + ')';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 230, ' + a + ')';
+            ctx.shadowColor = '#FDE047';
+            ctx.shadowBlur = 8;
+            ctx.fill();
+          }
+          ctx.restore();
+
+          lobbyRafId = requestAnimationFrame(frame);
+        }
+
+        lobbyRafId = requestAnimationFrame(frame);
+      }
+
+      function stopLobbyCanvas() {
+        if (lobbyRafId !== null) {
+          cancelAnimationFrame(lobbyRafId);
+          lobbyRafId = null;
+        }
+      }
+
+      /* =========================================================
+         Collision Solver & Combat Logic
+         ========================================================= */
+      function moveWithCollision(player, dx, dy, lvl, gatesState) {
+        var pr = 14;
+        var totalDist = Math.hypot(dx, dy);
+        var steps = Math.max(1, Math.ceil(totalDist / 5));
+        var stepX = dx / steps;
+        var stepY = dy / steps;
+
+        var obstacles = lvl.walls.slice();
+        for (var i = 0; i < lvl.gates.length; i++) {
+          var g = lvl.gates[i];
+          if (!gatesState[g.id]) {
+            obstacles.push({ x: g.x, y: g.y, width: g.width, height: g.height });
+          }
+        }
+
+        function resolveAxis(cx, cy) {
+          var rx = cx;
+          var ry = cy;
+          for (var pass = 0; pass < 2; pass++) {
+            for (var i = 0; i < obstacles.length; i++) {
+              var w = obstacles[i];
+              var closestX = Math.max(w.x, Math.min(rx, w.x + w.width));
+              var closestY = Math.max(w.y, Math.min(ry, w.y + w.height));
+              var distX = rx - closestX;
+              var distY = ry - closestY;
+              var distSq = distX * distX + distY * distY;
+              if (distSq < pr * pr) {
+                var dist = Math.sqrt(distSq);
+                if (dist > 0.0001) {
+                  var overlap = pr - dist;
+                  rx += (distX / dist) * overlap;
+                  ry += (distY / dist) * overlap;
+                } else {
+                  var lPen = Math.abs(rx - w.x);
+                  var rPen = Math.abs(w.x + w.width - rx);
+                  var tPen = Math.abs(ry - w.y);
+                  var bPen = Math.abs(w.y + w.height - ry);
+                  var minPen = Math.min(lPen, rPen, tPen, bPen);
+                  if (minPen === lPen) rx = w.x - pr;
+                  else if (minPen === rPen) rx = w.x + w.width + pr;
+                  else if (minPen === tPen) ry = w.y - pr;
+                  else ry = w.y + w.height + pr;
+                }
+              }
+            }
+          }
+          return {
+            x: Math.max(114 + pr, Math.min(lvl.width - 114 - pr, rx)),
+            y: Math.max(114 + pr, Math.min(lvl.height - 114 - pr, ry))
+          };
+        }
+
+        var curX = player.x;
+        var curY = player.y;
+        for (var s = 0; s < steps; s++) {
+          var ax = resolveAxis(curX + stepX, curY);
+          var ay = resolveAxis(ax.x, ax.y + stepY);
+          curX = ay.x;
+          curY = ay.y;
+        }
+        player.x = curX;
+        player.y = curY;
+      }
+
+      function handleEnemyDefeated(enemy) {
+        enemy.isDefeated = true;
+        SoundEngine.playEnemyDefeated();
+
+        var pCount = enemy.isBoss ? 34 : 18;
+        for (var k = 0; k < pCount; k++) {
+          state.particles.push({
+            x: enemy.x,
+            y: enemy.y,
+            vx: (Math.random() - 0.5) * (enemy.isBoss ? 280 : 210),
+            vy: (Math.random() - 0.5) * (enemy.isBoss ? 280 : 210),
+            radius: enemy.isBoss ? 4 : 2.5 + Math.random() * 3,
+            color: k % 2 === 0 ? '#FFD700' : '#7C3AED',
+            alpha: 1,
+            life: 0,
+            maxLife: 0.65
+          });
+        }
+
+        var tokVal = 5 + Math.floor((state.level.depth - 1) * 0.6);
+        for (var t = 0; t < enemy.tokenDropCount; t++) {
+          var ang = (t / enemy.tokenDropCount) * Math.PI * 2;
+          state.items.push({
+            id: 'drop_tok_' + enemy.id + '_' + t + '_' + Math.random(),
+            type: 'token',
+            x: enemy.x + Math.cos(ang) * 24,
+            y: enemy.y + Math.sin(ang) * 24,
+            value: tokVal,
+            collected: false
+          });
+        }
+
+        if (enemy.dropsKey) {
+          state.items.push({
+            id: 'drop_key_' + enemy.id,
+            type: 'key',
+            x: enemy.x,
+            y: enemy.y,
+            value: 1,
+            collected: false
+          });
+          showBanner(enemy.name + ' banished — Sanctuary Key dropped.');
+        } else if (state.player.ammo <= 5) {
+          state.items.push({
+            id: 'drop_ammo_' + enemy.id,
+            type: 'ammo',
+            x: enemy.x,
+            y: enemy.y,
+            value: 4,
+            collected: false
+          });
+        }
+
+        syncUI();
+      }
+
+      function fireBolt(customDirX, customDirY) {
+        if (state.screen !== 'playing' || state.isPaused) return;
+        var p = state.player;
+        if (p.ammo <= 0) {
+          SoundEngine.playEnemyHit();
+          showBanner('Out of bolts — gather blue crystals.');
+          return;
+        }
+
+        p.ammo -= 1;
+        SoundEngine.playShoot();
+
+        var dirX = 0;
+        var dirY = 0;
+        if (typeof customDirX === 'number' && typeof customDirY === 'number') {
+          var dLen = Math.hypot(customDirX, customDirY);
+          if (dLen > 0.001) {
+            dirX = customDirX / dLen;
+            dirY = customDirY / dLen;
+            if (Math.abs(dirX) > Math.abs(dirY)) p.facing = dirX < 0 ? 'left' : 'right';
+            else p.facing = dirY < 0 ? 'up' : 'down';
+          }
+        }
+        if (dirX === 0 && dirY === 0) {
+          if (p.facing === 'left') dirX = -1;
+          else if (p.facing === 'right') dirX = 1;
+          else if (p.facing === 'up') dirY = -1;
+          else dirY = 1;
+        }
+
+        var isBlaster = state.hasOneShotBlaster;
+        var speed = isBlaster ? 720 : 540;
+        var sx = p.x + dirX * 18;
+        var sy = p.y + dirY * 18;
+
+        state.projectiles.push({
+          id: 'proj_' + Date.now() + '_' + Math.random(),
+          x: sx,
+          y: sy,
+          vx: dirX * speed,
+          vy: dirY * speed,
+          angle: Math.atan2(dirY, dirX),
+          radius: isBlaster ? 8 : 6,
+          life: 0,
+          maxLife: 1.35,
+          color: isBlaster ? '#F59E0B' : '#38BDF8',
+          damage: isBlaster ? 999 : 1,
+          isOneShot: isBlaster,
+          isEnemy: false,
+          trail: [{ x: sx, y: sy }]
+        });
+
+        for (var i = 0; i < (isBlaster ? 8 : 4); i++) {
+          state.particles.push({
+            x: sx,
+            y: sy,
+            vx: (Math.random() - 0.5) * 90 + dirX * 80,
+            vy: (Math.random() - 0.5) * 90 + dirY * 80,
+            radius: isBlaster ? 2.8 : 2,
+            color: isBlaster ? '#F43F5E' : '#BAE6FD',
+            alpha: 1,
+            life: 0,
+            maxLife: 0.22
+          });
+        }
+
+        syncUI();
+      }
+
+      function triggerSnapOfDoom() {
+        if (state.screen !== 'playing' || state.isPaused) return;
+        if (state.snapCount <= 0) {
+          showBanner('No Snap charges left — visit the Shop in the Main Menu.');
+          return;
+        }
+
+        var active = state.enemies.filter(function (e) { return !e.isDefeated; });
+        if (active.length === 0) {
+          showBanner('No Shadows remain in this chamber.');
+          return;
+        }
+
+        var p = state.player;
+        var nearest = active[0];
+        var minDist = Math.hypot(nearest.x - p.x, nearest.y - p.y);
+        for (var i = 1; i < active.length; i++) {
+          var d = Math.hypot(active[i].x - p.x, active[i].y - p.y);
+          if (d < minDist) {
+            minDist = d;
+            nearest = active[i];
+          }
+        }
+
+        state.snapCount = Math.max(0, state.snapCount - 1);
+        saveProgress();
+
+        for (var k = 0; k < 18; k++) {
+          var ang = (k / 18) * Math.PI * 2;
+          state.particles.push({
+            x: p.x,
+            y: p.y,
+            vx: Math.cos(ang) * 180,
+            vy: Math.sin(ang) * 180,
+            radius: 3.5,
+            color: k % 2 === 0 ? '#A855F7' : '#FDE047',
+            alpha: 1,
+            life: 0,
+            maxLife: 0.45
+          });
+        }
+
+        nearest.hp = 0;
+        nearest.hitFlash = 0.25;
+        handleEnemyDefeated(nearest);
+        showBanner('The Snap of Doom erased ' + nearest.name + '.');
+        syncUI();
+      }
+
+      function triggerInteract() {
+        if (state.screen !== 'playing' || state.isPaused || !state.level) return;
+        var lvl = state.level;
+        var p = state.player;
+        for (var i = 0; i < lvl.gates.length; i++) {
+          var gate = lvl.gates[i];
+          if (state.gatesState[gate.id]) continue;
+          var cx = gate.x + gate.width / 2;
+          var cy = gate.y + gate.height / 2;
+          if (Math.hypot(p.x - cx, p.y - cy) < 130) {
+            if (gate.requiresKey && p.keys < lvl.requiredKeys) {
+              var needed = lvl.requiredKeys - p.keys;
+              showBanner('Requires ' + needed + ' more Sanctuary Key' + (needed > 1 ? 's' : '') + '.');
+              return;
+            }
+            state.gatesState[gate.id] = true;
+            SoundEngine.playGateUnlock();
+            showBanner('Sanctuary Gate unsealed.');
+            syncUI();
+            return;
+          }
+        }
+      }
+
+      /* =========================================================
+         Stage Progression & Lifecycle
+         ========================================================= */
+      function enterStage(targetLevel, targetChapter, resetVitals, bannerOverride) {
+        var lvl = generateProceduralRoom(targetLevel, targetChapter);
+        state.level = lvl;
+        state.levelNum = targetLevel;
+        state.chapterNum = targetChapter;
+
+        var newScore = (targetLevel - 1) * CHAPTERS_PER_LEVEL + targetChapter;
+        var curBest = (state.bestLevel - 1) * CHAPTERS_PER_LEVEL + state.bestChapter;
+        if (newScore > curBest) {
+          state.bestLevel = targetLevel;
+          state.bestChapter = targetChapter;
+          saveProgress();
+        }
+
+        state.gatesState = {};
+        state.projectiles = [];
+        state.particles = [];
+        state.portalUnlocked = false;
+        state.enemies = lvl.enemies.slice();
+        state.items = lvl.items.slice();
+
+        state.transition = {
+          progress: 0.85,
+          title: 'Level ' + targetLevel + '-' + targetChapter + ' · ' + lvl.subtitle,
+          active: true
+        };
+
+        var p = state.player;
+        p.x = lvl.spawn.x;
+        p.y = lvl.spawn.y;
+        p.vx = 0;
+        p.vy = 0;
+        p.facing = 'up';
+        p.isMoving = false;
+        p.invulnerableTimer = 0.85;
+        p.keys = 0;
+
+        if (resetVitals) {
+          p.hp = MAX_HP;
+          p.ammo = MAX_AMMO;
+        } else if (p.ammo < 8) {
+          p.ammo = 8;
+        }
+
+        SoundEngine.playGateUnlock();
+        showBanner(bannerOverride || ('Level ' + targetLevel + '-' + targetChapter + ' · ' + lvl.subtitle));
+        syncUI();
+      }
+
+      function enterFullscreenAndLandscape() {
+        try {
+          var docEl = document.documentElement;
+          if (!document.fullscreenElement) {
+            if (typeof docEl.requestFullscreen === 'function') {
+              docEl.requestFullscreen().then(function () {
+                try {
+                  if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                    screen.orientation.lock('landscape').catch(function () {});
+                  }
+                } catch (e) {}
+              }).catch(function () {});
+            } else if (typeof docEl.webkitRequestFullscreen === 'function') {
+              docEl.webkitRequestFullscreen();
+            }
+          } else {
+            if (screen.orientation && typeof screen.orientation.lock === 'function') {
+              screen.orientation.lock('landscape').catch(function () {});
+            }
+          }
+        } catch (err) {}
+      }
+
+      function launchVictoryConfetti() {
+        var ctx = elGameCanvas.getContext('2d');
+        if (!ctx) return;
+        var colors = ['#FFD700', '#F59E0B', '#60A5FA', '#FFFFFF', '#A855F7'];
+        for (var i = 0; i < 110; i++) {
+          state.particles.push({
+            x: state.player.x + (Math.random() - 0.5) * 40,
+            y: state.player.y + (Math.random() - 0.5) * 40,
+            vx: (Math.random() - 0.5) * 420,
+            vy: (Math.random() - 0.8) * 380,
+            radius: 3 + Math.random() * 4,
+            color: colors[i % colors.length],
+            alpha: 1,
+            life: 0,
+            maxLife: 1.8
+          });
+        }
+        renderGameWorld(ctx, elGameCanvas, state.elapsedSeconds);
+      }
+
+      function stopGameLoop() {
+        if (gameRafId !== null) {
+          cancelAnimationFrame(gameRafId);
+          gameRafId = null;
+        }
+      }
+
+      function startGameLoop() {
+        stopGameLoop();
+        var ctx = elGameCanvas.getContext('2d');
+        if (!ctx) return;
+        var lastTime = performance.now();
+
+        function loop(now) {
+          if (state.screen !== 'playing' || state.isPaused) {
+            gameRafId = null;
+            return;
+          }
+
+          var dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000));
+          lastTime = now;
+
+          // Hold simulation cleanly while device is in portrait mode
+          if (window.innerHeight > window.innerWidth) {
+            gameRafId = requestAnimationFrame(loop);
+            return;
+          }
+
+          state.elapsedSeconds += dt;
+          var wholeSec = Math.floor(state.elapsedSeconds);
+          if (wholeSec !== state.displaySeconds) {
+            state.displaySeconds = wholeSec;
+            elTimeText.textContent = 'Time: ' + formatTime(wholeSec);
+          }
+
+          if (state.transition.active) {
+            state.transition.progress -= dt * 1.65;
+            if (state.transition.progress <= 0) {
+              state.transition.progress = 0;
+              state.transition.active = false;
+            }
+          }
+
+          var lvl = state.level;
+          var p = state.player;
+          if (p.invulnerableTimer > 0) p.invulnerableTimer = Math.max(0, p.invulnerableTimer - dt);
+
+          // 1. Movement
+          var vx = 0;
+          var vy = 0;
+          if (keysDown['KeyA'] || keysDown['ArrowLeft']) vx -= 1;
+          if (keysDown['KeyD'] || keysDown['ArrowRight']) vx += 1;
+          if (keysDown['KeyW'] || keysDown['ArrowUp']) vy -= 1;
+          if (keysDown['KeyS'] || keysDown['ArrowDown']) vy += 1;
+          vx += touchVector.x;
+          vy += touchVector.y;
+
+          var len = Math.hypot(vx, vy);
+          if (len > 0.01) {
+            var speed = 220;
+            var nx = (vx / len) * speed;
+            var ny = (vy / len) * speed;
+            p.vx = nx;
+            p.vy = ny;
+            p.isMoving = true;
+            if (Math.abs(nx) > Math.abs(ny)) p.facing = nx < 0 ? 'left' : 'right';
+            else p.facing = ny < 0 ? 'up' : 'down';
+            moveWithCollision(p, nx * dt, ny * dt, lvl, state.gatesState);
+          } else {
+            p.vx = 0;
+            p.vy = 0;
+            p.isMoving = false;
+          }
+
+          // 2. Enemies Patrol, Ranged/Boss Shooting & Contact
+          for (var i = 0; i < state.enemies.length; i++) {
+            var enemy = state.enemies[i];
+            if (enemy.isDefeated) continue;
+            if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
+
+            if (enemy.waypoints.length > 0) {
+              var wp = enemy.waypoints[enemy.currentWaypoint];
+              var edx = wp.x - enemy.x;
+              var edy = wp.y - enemy.y;
+              var edist = Math.hypot(edx, edy);
+              if (edist < 8) {
+                enemy.currentWaypoint = (enemy.currentWaypoint + 1) % enemy.waypoints.length;
+              } else {
+                enemy.vx = (edx / edist) * enemy.speed;
+                enemy.vy = (edy / edist) * enemy.speed;
+                enemy.x += enemy.vx * dt;
+                enemy.y += enemy.vy * dt;
+              }
+            }
+
+            var pDist = Math.hypot(p.x - enemy.x, p.y - enemy.y);
+
+            if ((enemy.type === 'ranged' || enemy.type === 'boss') && enemy.shootCooldown) {
+              enemy.shootTimer = (typeof enemy.shootTimer === 'number' ? enemy.shootTimer : enemy.shootCooldown) - dt;
+              var aggroRange = enemy.isBoss ? 540 : 440;
+              if (enemy.shootTimer <= 0 && pDist < aggroRange) {
+                enemy.shootTimer = enemy.shootCooldown;
+                var baseAng = Math.atan2(p.y - enemy.y, p.x - enemy.x);
+                var angles = enemy.isBoss ? [baseAng - 0.24, baseAng, baseAng + 0.24] : [baseAng];
+                var bSpeed = enemy.isBoss ? 310 : 270;
+                for (var ai = 0; ai < angles.length; ai++) {
+                  var ang = angles[ai];
+                  var sx = enemy.x + Math.cos(ang) * (enemy.radius + 6);
+                  var sy = enemy.y + Math.sin(ang) * (enemy.radius + 6);
+                  state.projectiles.push({
+                    id: 'eproj_' + Math.random(),
+                    x: sx,
+                    y: sy,
+                    vx: Math.cos(ang) * bSpeed,
+                    vy: Math.sin(ang) * bSpeed,
+                    angle: ang,
+                    radius: enemy.isBoss ? 7 : 5.5,
+                    life: 0,
+                    maxLife: 2.1,
+                    damage: enemy.isBoss ? 18 : 14,
+                    isEnemy: true,
+                    color: '#D946EF',
+                    trail: [{ x: sx, y: sy }]
+                  });
+                }
+              }
+            }
+
+            if (pDist < enemy.radius + 14 && p.invulnerableTimer <= 0) {
+              p.hp = Math.max(0, p.hp - enemy.damage);
+              p.invulnerableTimer = 1.0;
+              SoundEngine.playEnemyHit();
+
+              var kx = pDist > 0 ? ((p.x - enemy.x) / pDist) * 32 : 0;
+              var ky = pDist > 0 ? ((p.y - enemy.y) / pDist) * 32 : 32;
+              moveWithCollision(p, kx, ky, lvl, state.gatesState);
+
+              for (var k = 0; k < 10; k++) {
+                state.particles.push({
+                  x: p.x,
+                  y: p.y,
+                  vx: (Math.random() - 0.5) * 160,
+                  vy: (Math.random() - 0.5) * 160,
+                  radius: 3,
+                  color: '#F43F5E',
+                  alpha: 1,
+                  life: 0,
+                  maxLife: 0.35
+                });
+              }
+
+              syncUI();
+              if (p.hp <= 0) {
+                triggerGameOver();
+                return;
+              }
+            }
+          }
+
+          // 3. Projectiles
+          var nextProjs = [];
+          for (var i = 0; i < state.projectiles.length; i++) {
+            var proj = state.projectiles[i];
+            proj.life += dt;
+            proj.x += proj.vx * dt;
+            proj.y += proj.vy * dt;
+            proj.trail.push({ x: proj.x, y: proj.y });
+            if (proj.trail.length > (proj.isOneShot ? 9 : 7)) proj.trail.shift();
+
+            var hit = false;
+            if (proj.x < 50 || proj.x > lvl.width - 50 || proj.y < 50 || proj.y > lvl.height - 50) hit = true;
+
+            if (!hit) {
+              for (var wi = 0; wi < lvl.walls.length; wi++) {
+                var w = lvl.walls[wi];
+                if (proj.x >= w.x && proj.x <= w.x + w.width && proj.y >= w.y && proj.y <= w.y + w.height) {
+                  hit = true;
+                  break;
+                }
+              }
+            }
+
+            if (!hit) {
+              for (var gi = 0; gi < lvl.gates.length; gi++) {
+                var g = lvl.gates[gi];
+                if (!state.gatesState[g.id] && proj.x >= g.x && proj.x <= g.x + g.width && proj.y >= g.y && proj.y <= g.y + g.height) {
+                  hit = true;
+                  break;
+                }
+              }
+            }
+
+            if (!hit && proj.isEnemy) {
+              if (Math.hypot(proj.x - p.x, proj.y - p.y) < proj.radius + 14) {
+                hit = true;
+                if (p.invulnerableTimer <= 0) {
+                  p.hp = Math.max(0, p.hp - proj.damage);
+                  p.invulnerableTimer = 0.75;
+                  SoundEngine.playEnemyHit();
+                  syncUI();
+                  if (p.hp <= 0) {
+                    triggerGameOver();
+                    return;
+                  }
+                }
+              }
+            } else if (!hit && !proj.isEnemy) {
+              for (var ei = 0; ei < state.enemies.length; ei++) {
+                var en = state.enemies[ei];
+                if (en.isDefeated) continue;
+                if (Math.hypot(proj.x - en.x, proj.y - en.y) < en.radius + proj.radius) {
+                  hit = true;
+                  en.hp -= proj.damage;
+                  en.hitFlash = 0.14;
+                  SoundEngine.playEnemyHit();
+                  for (var sp = 0; sp < 8; sp++) {
+                    state.particles.push({
+                      x: en.x,
+                      y: en.y,
+                      vx: (Math.random() - 0.5) * 140,
+                      vy: (Math.random() - 0.5) * 140,
+                      radius: 2.5,
+                      color: proj.isOneShot ? '#F59E0B' : '#A855F7',
+                      alpha: 1,
+                      life: 0,
+                      maxLife: 0.35
+                    });
+                  }
+                  if (en.hp <= 0) handleEnemyDefeated(en);
+                  break;
+                }
+              }
+            }
+
+            if (hit) {
+              for (var s = 0; s < 5; s++) {
+                state.particles.push({
+                  x: proj.x,
+                  y: proj.y,
+                  vx: (Math.random() - 0.5) * 90,
+                  vy: (Math.random() - 0.5) * 90,
+                  radius: proj.isOneShot ? 3 : 2,
+                  color: proj.color,
+                  alpha: 0.9,
+                  life: 0,
+                  maxLife: 0.2
+                });
+              }
+            } else if (proj.life < proj.maxLife) {
+              nextProjs.push(proj);
+            }
+          }
+          state.projectiles = nextProjs;
+
+          // 4. Collectible Pickups
+          var uiDirty = false;
+          for (var i = 0; i < state.items.length; i++) {
+            var item = state.items[i];
+            if (item.collected) continue;
+            if (Math.hypot(p.x - item.x, p.y - item.y) < 32) {
+              item.collected = true;
+              uiDirty = true;
+              if (item.type === 'key') {
+                p.keys += item.value;
+                SoundEngine.playKeyPickup();
+                showBanner(p.keys >= lvl.requiredKeys ? 'All Sanctuary Keys claimed — Gate unsealed.' : 'Sanctuary Key ' + p.keys + '/' + lvl.requiredKeys + ' claimed.');
+              } else if (item.type === 'token') {
+                state.tokens += item.value;
+                saveProgress();
+                SoundEngine.playCoin();
+              } else if (item.type === 'ammo') {
+                p.ammo = Math.min(p.maxAmmo, p.ammo + item.value);
+                SoundEngine.playCoin();
+                showBanner('+' + item.value + ' Bolts');
+              } else if (item.type === 'heal') {
+                p.hp = Math.min(p.maxHp, p.hp + item.value);
+                SoundEngine.playSwitchPress();
+                showBanner('+' + item.value + ' Vitality');
+              }
+            }
+          }
+
+          // 5. Auto-Unseal Sanctuary Gate when Required Keys Collected
+          for (var i = 0; i < lvl.gates.length; i++) {
+            var gate = lvl.gates[i];
+            if (state.gatesState[gate.id]) continue;
+            if (!gate.requiresKey || p.keys >= lvl.requiredKeys) {
+              state.gatesState[gate.id] = true;
+              uiDirty = true;
+              SoundEngine.playGateUnlock();
+              var gcx = gate.x + gate.width / 2;
+              var gcy = gate.y + gate.height / 2;
+              for (var k = 0; k < 16; k++) {
+                state.particles.push({
+                  x: gcx,
+                  y: gcy,
+                  vx: (Math.random() - 0.5) * 160,
+                  vy: (Math.random() - 0.5) * 160,
+                  radius: 3.5,
+                  color: '#FDE047',
+                  alpha: 1,
+                  life: 0,
+                  maxLife: 0.5
+                });
+              }
+            }
+          }
+
+          // 6. Particles
+          var nextParts = [];
+          for (var i = 0; i < state.particles.length; i++) {
+            var part = state.particles[i];
+            part.life += dt;
+            part.x += part.vx * dt;
+            part.y += part.vy * dt;
+            part.alpha = Math.max(0, 1 - part.life / part.maxLife);
+            if (part.life < part.maxLife) nextParts.push(part);
+          }
+          state.particles = nextParts;
+
+          // 7. Portal Activation & Level Progression
+          var allOpen = lvl.gates.every(function (g) { return state.gatesState[g.id]; });
+          var portalActiveNow = allOpen && p.keys >= lvl.requiredKeys;
+          if (portalActiveNow && !state.portalUnlocked) {
+            state.portalUnlocked = true;
+            uiDirty = true;
+            SoundEngine.playGateUnlock();
+            showBanner('North Sanctuary Gate unsealed — step into the threshold.');
+          }
+          if (uiDirty) syncUI();
+
+          var ez = lvl.exitZone;
+          if (portalActiveNow) {
+            var clX = Math.max(ez.x, Math.min(p.x, ez.x + ez.width));
+            var clY = Math.max(ez.y, Math.min(p.y, ez.y + ez.height));
+            if (Math.hypot(p.x - clX, p.y - clY) < 18) {
+              if (lvl.chapter < CHAPTERS_PER_LEVEL) {
+                enterStage(lvl.level, lvl.chapter + 1, false);
+              } else if (lvl.level < MAX_CAMPAIGN_LEVEL) {
+                enterStage(lvl.level + 1, 1, false, 'Level ' + lvl.level + ' Cleared! Entering Level ' + (lvl.level + 1) + '-1');
+              } else {
+                triggerVictory();
+                return;
+              }
+            }
+          }
+
+          // 8. Render Scene
+          renderGameWorld(ctx, elGameCanvas, now / 1000);
+          gameRafId = requestAnimationFrame(loop);
+        }
+
+        gameRafId = requestAnimationFrame(loop);
+      }
+
+      function startNewRun() {
+        enterFullscreenAndLandscape();
+        stopLobbyCanvas();
+        state.screen = 'playing';
+        state.isPaused = false;
+        state.elapsedSeconds = 0;
+        state.displaySeconds = -1;
+        keysDown = {};
+        touchVector = { x: 0, y: 0 };
+
+        elShopModal.classList.add('hidden');
+        elLobbyScreen.classList.add('hidden');
+        elPauseModal.classList.add('hidden');
+        elGameOverModal.classList.add('hidden');
+        elVictoryModal.classList.add('hidden');
+        elGameStage.classList.remove('hidden');
+        elVirtualControls.classList.remove('hidden');
+
+        elGameCanvas.width = Math.max(1, window.innerWidth);
+        elGameCanvas.height = Math.max(1, window.innerHeight);
+
+        SoundEngine.startAmbientBgm();
+        enterStage(1, 1, true);
+        startGameLoop();
+      }
+
+      function togglePause() {
+        if (state.screen !== 'playing') return;
+        keysDown = {};
+        touchVector = { x: 0, y: 0 };
+        SoundEngine.playSwitchPress();
+        state.isPaused = !state.isPaused;
+        if (state.isPaused) {
+          stopGameLoop();
+          elPauseSub.textContent = state.level.name + ' · Time: ' + formatTime(Math.floor(state.elapsedSeconds));
+          elPauseModal.classList.remove('hidden');
+          elVirtualControls.classList.add('hidden');
+        } else {
+          elPauseModal.classList.add('hidden');
+          elVirtualControls.classList.remove('hidden');
+          startGameLoop();
+        }
+      }
+
+      function exitToLobby() {
+        stopGameLoop();
+        SoundEngine.stopAmbientBgm();
+        SoundEngine.playSwitchPress();
+
+        keysDown = {};
+        touchVector = { x: 0, y: 0 };
+        state.screen = 'lobby';
+        state.isPaused = false;
+        state.projectiles = [];
+        state.particles = [];
+        state.enemies = [];
+        state.items = [];
+        state.gatesState = {};
+        state.portalUnlocked = false;
+        state.elapsedSeconds = 0;
+        state.player.hp = MAX_HP;
+        state.player.ammo = MAX_AMMO;
+        state.player.keys = 0;
+
+        elPauseModal.classList.add('hidden');
+        elGameOverModal.classList.add('hidden');
+        elVictoryModal.classList.add('hidden');
+        elGameStage.classList.add('hidden');
+        elLobbyScreen.classList.remove('hidden');
+
+        syncUI();
+        startLobbyCanvas();
+      }
+
+      function triggerGameOver() {
+        stopGameLoop();
+        SoundEngine.stopAmbientBgm();
+        state.screen = 'gameover';
+        keysDown = {};
+        touchVector = { x: 0, y: 0 };
+        elVirtualControls.classList.add('hidden');
+        elGameOverSub.textContent = 'Reached Level ' + state.levelNum + '-' + state.chapterNum + ' · Time: ' + formatTime(Math.floor(state.elapsedSeconds)) + ' · ' + state.tokens + ' Tokens saved';
+        elGameOverModal.classList.remove('hidden');
+      }
+
+      function triggerVictory() {
+        stopGameLoop();
+        SoundEngine.stopAmbientBgm();
+        SoundEngine.playHavenAscension();
+        state.screen = 'victory';
+        keysDown = {};
+        touchVector = { x: 0, y: 0 };
+        elVirtualControls.classList.add('hidden');
+        elVictoryTime.textContent = formatTime(Math.floor(state.elapsedSeconds));
+        elVictoryTokens.textContent = String(state.tokens);
+        launchVictoryConfetti();
+        elVictoryModal.classList.remove('hidden');
+      }
+
+      /* =========================================================
+         Event Bindings (PC Keyboard/Mouse + Mobile Touch + Shop + Resize)
+         ========================================================= */
+      document.getElementById('btn-play').addEventListener('click', function () {
+        SoundEngine.playSwitchPress();
+        startNewRun();
+      });
+
+      document.getElementById('btn-open-shop').addEventListener('click', function () {
+        SoundEngine.playSwitchPress();
+        syncUI();
+        elShopModal.classList.remove('hidden');
+      });
+
+      function closeShop() {
+        SoundEngine.playSwitchPress();
+        elShopModal.classList.add('hidden');
+      }
+      document.getElementById('btn-close-shop').addEventListener('click', closeShop);
+      document.getElementById('btn-done-shop').addEventListener('click', closeShop);
+
+      elBtnBuySnap.addEventListener('click', function () {
+        if (state.tokens < SNAP_COST) return;
+        state.tokens -= SNAP_COST;
+        state.snapCount += 1;
+        saveProgress();
+        SoundEngine.playShopPurchase();
+        syncUI();
+      });
+
+      elBtnBuyBlaster.addEventListener('click', function () {
+        if (state.hasOneShotBlaster || state.tokens < BLASTER_COST) return;
+        state.tokens -= BLASTER_COST;
+        state.hasOneShotBlaster = true;
+        saveProgress();
+        SoundEngine.playShopPurchase();
+        syncUI();
+      });
+
+      document.getElementById('btn-pause').addEventListener('click', togglePause);
+      document.getElementById('btn-resume').addEventListener('click', togglePause);
+      document.getElementById('btn-exit-lobby').addEventListener('click', exitToLobby);
+      document.getElementById('btn-gameover-lobby').addEventListener('click', exitToLobby);
+      document.getElementById('btn-gameover-retry').addEventListener('click', startNewRun);
+      document.getElementById('btn-victory-lobby').addEventListener('click', exitToLobby);
+      document.getElementById('btn-victory-restart').addEventListener('click', startNewRun);
+
+      elHudSnapBtn.addEventListener('click', triggerSnapOfDoom);
+      elBtnTouchSnap.addEventListener('click', triggerSnapOfDoom);
+      elBtnTouchShoot.addEventListener('click', function () { fireBolt(); });
+      elBtnTouchInteract.addEventListener('click', function () {
+        SoundEngine.playSwitchPress();
+        triggerInteract();
+      });
+
+      // PC Mouse Click on Canvas aims toward cursor & fires!
+      elGameCanvas.addEventListener('mousedown', function (e) {
+        if (e.button !== 0 || state.screen !== 'playing' || state.isPaused) return;
+        var rect = elGameCanvas.getBoundingClientRect();
+        var sx = e.clientX - rect.left;
+        var sy = e.clientY - rect.top;
+        var worldX = state.player.x + (sx - elGameCanvas.width / 2) / lastCamScale;
+        var worldY = state.player.y + (sy - elGameCanvas.height / 2) / lastCamScale;
+        fireBolt(worldX - state.player.x, worldY - state.player.y);
+      });
+
+      // PC Keyboard Bindings
+      window.addEventListener('keydown', function (e) {
+        if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.code) !== -1) {
+          e.preventDefault();
+        }
+        if (state.screen !== 'playing') return;
+        if (e.code === 'Escape' || e.code === 'KeyP') {
+          togglePause();
+          return;
+        }
+        if (state.isPaused) return;
+        keysDown[e.code] = true;
+        if (e.code === 'Space') fireBolt();
+        else if (e.code === 'KeyE') triggerInteract();
+        else if (e.code === 'KeyF') triggerSnapOfDoom();
+      });
+
+      window.addEventListener('keyup', function (e) {
+        keysDown[e.code] = false;
+      });
+
+      window.addEventListener('blur', function () {
+        keysDown = {};
+        touchVector = { x: 0, y: 0 };
+      });
+
+      // Virtual Touch Joystick (Pointer Capture Multi-Touch Safe)
+      var joystickPointerId = null;
+
+      function updateJoystick(clientX, clientY) {
+        var rect = elJoystickBase.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var dx = clientX - cx;
+        var dy = clientY - cy;
+        var dist = Math.hypot(dx, dy);
+        var maxR = Math.max(30, rect.width * 0.36);
+
+        if (dist === 0) {
+          elJoystickKnob.style.transform = 'translate(0px, 0px)';
+          touchVector = { x: 0, y: 0 };
+          return;
+        }
+        var ang = Math.atan2(dy, dx);
+        var clamped = Math.min(dist, maxR);
+        var kx = Math.cos(ang) * clamped;
+        var ky = Math.sin(ang) * clamped;
+        elJoystickKnob.style.transform = 'translate(' + kx.toFixed(1) + 'px, ' + ky.toFixed(1) + 'px)';
+        touchVector = { x: kx / maxR, y: ky / maxR };
+      }
+
+      function resetJoystick() {
+        joystickPointerId = null;
+        elJoystickKnob.style.transform = 'translate(0px, 0px)';
+        touchVector = { x: 0, y: 0 };
+      }
+
+      elJoystickBase.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        joystickPointerId = e.pointerId;
+        try { elJoystickBase.setPointerCapture(e.pointerId); } catch (err) {}
+        updateJoystick(e.clientX, e.clientY);
+      });
+
+      elJoystickBase.addEventListener('pointermove', function (e) {
+        if (joystickPointerId !== e.pointerId) return;
+        e.preventDefault();
+        updateJoystick(e.clientX, e.clientY);
+      });
+
+      elJoystickBase.addEventListener('pointerup', function (e) {
+        if (joystickPointerId === e.pointerId) resetJoystick();
+      });
+
+      elJoystickBase.addEventListener('pointercancel', function (e) {
+        if (joystickPointerId === e.pointerId) resetJoystick();
+      });
+
+      window.addEventListener('pointerup', function (e) {
+        if (joystickPointerId === e.pointerId) resetJoystick();
+      });
+
+      // Global Anti-Scroll Touchmove Lock (prevents bounce / pull-to-refresh)
+      function preventTouchScroll(e) {
+        if (e.cancelable) e.preventDefault();
+      }
+      document.addEventListener('touchmove', preventTouchScroll, { passive: false });
+      window.addEventListener('touchmove', preventTouchScroll, { passive: false });
+
+      // Responsive Canvas Resize & Orientation Change
+      function handleViewportResize() {
+        elGameCanvas.width = Math.max(1, window.innerWidth);
+        elGameCanvas.height = Math.max(1, window.innerHeight);
+        if (state.screen === 'playing' && state.level) {
+          var ctx = elGameCanvas.getContext('2d');
+          if (ctx) renderGameWorld(ctx, elGameCanvas, state.elapsedSeconds);
+        }
+      }
+      window.addEventListener('resize', handleViewportResize);
+      window.addEventListener('orientationchange', handleViewportResize);
+
+      // Initialize Lobby
+      syncUI();
+      startLobbyCanvas();
+    })();
+  </script>
+</body>
 </html>
-
