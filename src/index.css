@@ -1,0 +1,514 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --heaven-sky: #87CEEB;
+    --heaven-gold: #FFD700;
+    --heaven-white: #FFFFFF;
+    --heaven-clouds: #F0F8FF;
+    --heaven-green: #A8E6CF;
+  }
+
+  html,
+  body,
+  #root,
+  .game-container {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+    -ms-touch-action: none;
+  }
+
+  body {
+    font-family: 'Quicksand', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    background-color: #050b14;
+    color: #f1f5f9;
+  }
+
+  h1, h2, h3, .font-cinzel {
+    font-family: 'Cinzel', serif;
+  }
+
+  .font-montserrat {
+    font-family: 'Montserrat', sans-serif;
+  }
+}
+
+/* =========================================================
+   Cinematic Background & Atmosphere Animations
+   ========================================================= */
+
+@keyframes godRaysSweep {
+  0% {
+    transform: rotate(-15deg) translateY(-8%) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: rotate(-10deg) translateY(-2%) scale(1.08);
+    opacity: 0.55;
+  }
+  100% {
+    transform: rotate(-15deg) translateY(-8%) scale(1);
+    opacity: 0.35;
+  }
+}
+
+@keyframes cloudDriftSlow {
+  0% { transform: translateX(-5%) translateY(0); }
+  50% { transform: translateX(5%) translateY(-10px); }
+  100% { transform: translateX(-5%) translateY(0); }
+}
+
+@keyframes cloudDriftFast {
+  0% { transform: translateX(8%) translateY(-5px); }
+  50% { transform: translateX(-6%) translateY(5px); }
+  100% { transform: translateX(8%) translateY(-5px); }
+}
+
+@keyframes floatMote {
+  0% {
+    transform: translateY(100vh) translateX(0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-10vh) translateX(40px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes buttonShimmer {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%) skewX(-20deg); }
+}
+
+@keyframes haloPulseSlow {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.4), inset 0 0 15px rgba(255, 215, 0, 0.2);
+    border-color: rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(255, 215, 0, 0.8), inset 0 0 25px rgba(255, 215, 0, 0.4);
+    border-color: rgba(255, 235, 120, 0.9);
+  }
+}
+
+/* =========================================================
+   Typography & Glow Classes
+   ========================================================= */
+
+.cinematic-haven-title, .haven-title-3d {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF5C0 22%, #E5A83B 55%, #A16207 85%, #663C05 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 2px rgba(255, 255, 255, 0.4))
+          drop-shadow(0 4px 12px rgba(0, 0, 0, 0.85))
+          drop-shadow(0 0 32px rgba(255, 215, 0, 0.7));
+}
+
+.cinematic-glow-sub {
+  letter-spacing: 0.35em;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+/* =========================================================
+   Sleek Token Pill Badge (Top-Right)
+   ========================================================= */
+
+.token-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px 8px 10px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(28, 52, 86, 0.85) 0%, rgba(11, 23, 42, 0.95) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid #F59E0B;
+  border-radius: 9999px;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.45),
+              0 4px 16px rgba(0, 0, 0, 0.4),
+              inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.token-pill-badge:hover {
+  border-color: #FDE047;
+  box-shadow: 0 0 24px rgba(253, 224, 71, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.token-coin-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #FFE57F 0%, #F59E0B 70%, #B45309 100%);
+  border: 1.5px solid #FEF08A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 14px;
+  color: #78350F;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.token-text {
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: #F1F5F9;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* =========================================================
+   Center-Right Massive Glowing Pill "PLAY" Button
+   ========================================================= */
+
+.play-pill-button {
+  position: relative;
+  width: clamp(230px, 28vw, 360px);
+  height: clamp(66px, 8.5vw, 88px);
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at 50% 120%, rgba(56, 189, 248, 0.45) 0%, rgba(15, 36, 68, 0.92) 55%, rgba(10, 24, 46, 0.98) 100%);
+  border: 3px solid #EAB308;
+  box-shadow: 0 0 32px rgba(234, 179, 8, 0.45),
+              0 0 64px rgba(56, 189, 248, 0.25),
+              0 12px 32px rgba(0, 0, 0, 0.6),
+              inset 0 0 22px rgba(56, 189, 248, 0.4),
+              inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.play-pill-button:hover {
+  transform: scale(1.05);
+  border-color: #FDE047;
+  box-shadow: 0 0 45px rgba(253, 224, 71, 0.75),
+              0 0 85px rgba(56, 189, 248, 0.5),
+              0 16px 40px rgba(0, 0, 0, 0.7),
+              inset 0 0 32px rgba(56, 189, 248, 0.6);
+}
+
+.play-pill-button:active {
+  transform: scale(0.97);
+}
+
+.play-text {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(26px, 3.6vw, 38px);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF5B8 30%, #EAB308 70%, #92400E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 14px rgba(255, 215, 0, 0.6));
+}
+
+/* Cyan diamond accents on left and right tips */
+.play-pill-button::before, .play-pill-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  background: #38BDF8;
+  box-shadow: 0 0 12px #38BDF8, 0 0 4px #FFFFFF;
+  transform: translateY(-50%) rotate(45deg);
+  border: 1px solid #FFFFFF;
+  z-index: 2;
+}
+
+.play-pill-button::before { left: -4px; }
+.play-pill-button::after { right: -4px; }
+
+/* =========================================================
+   "THE ADVENTURER" Glass Plate
+   ========================================================= */
+
+.adventurer-plate {
+  padding: 6px 22px;
+  background: rgba(15, 27, 48, 0.8);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 215, 0, 0.35);
+  border-radius: 12px;
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: #E2E8F0;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+@keyframes angelFloating {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.angel-float {
+  animation: angelFloating 4.5s ease-in-out infinite;
+}
+
+
+/* =========================================================
+   AAA Glassmorphism Panels
+   ========================================================= */
+
+.aaa-glass-panel {
+  background: rgba(11, 20, 36, 0.75);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55),
+              0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+              0 0 40px rgba(56, 189, 248, 0.08) inset;
+}
+
+.aaa-glass-card {
+  background: rgba(15, 27, 48, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aaa-glass-card:hover {
+  background: rgba(22, 38, 68, 0.8);
+  border-color: rgba(255, 215, 0, 0.45);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), 0 0 24px rgba(245, 158, 11, 0.2);
+  transform: translateY(-2px);
+}
+
+/* =========================================================
+   AAA Indie Gaming Buttons
+   ========================================================= */
+
+.aaa-primary-btn {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 50%, #92400E 100%);
+  border: 1px solid rgba(254, 240, 138, 0.6);
+  box-shadow: 0 8px 30px rgba(245, 158, 11, 0.45),
+              0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aaa-primary-btn:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 42px rgba(245, 158, 11, 0.65),
+              0 0 25px rgba(255, 215, 0, 0.5),
+              0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  filter: brightness(1.1);
+}
+
+.aaa-primary-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.aaa-primary-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: translateX(-150%) skewX(-20deg);
+}
+
+.aaa-primary-btn:hover::after {
+  animation: buttonShimmer 1.2s infinite ease-in-out;
+}
+
+.aaa-secondary-btn {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aaa-secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), 0 0 15px rgba(255, 215, 0, 0.25);
+  transform: translateY(-1px);
+}
+
+.aaa-secondary-btn:active {
+  transform: scale(0.97);
+}
+
+/* =========================================================
+   Lobby Shop Button & Forged RPG Health Frame
+   ========================================================= */
+
+.lobby-shop-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: clamp(190px, 22vw, 260px);
+  padding: 13px 26px;
+  border-radius: 9999px;
+  background: rgba(15, 29, 52, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(245, 158, 11, 0.65);
+  color: #fef3c7;
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45),
+              inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.18s ease,
+              box-shadow 0.18s ease,
+              background 0.18s ease;
+}
+
+.lobby-shop-button:hover {
+  transform: translateY(-2px);
+  background: rgba(24, 44, 78, 0.94);
+  border-color: #fde047;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55),
+              0 0 22px rgba(245, 158, 11, 0.35);
+}
+
+.lobby-shop-button:active {
+  transform: scale(0.97);
+}
+
+.rpg-health-frame {
+  padding: 7px 12px;
+  background: linear-gradient(180deg, rgba(19, 28, 46, 0.92) 0%, rgba(10, 16, 28, 0.96) 100%);
+  border: 1.5px solid rgba(217, 119, 6, 0.72);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(254, 243, 199, 0.22);
+}
+
+/* =========================================================
+   Bulletproof Centered Main Menu Anchor (Mobile/Tablet/Desktop)
+   ========================================================= */
+
+.lobby-center-container {
+  position: absolute;
+  top: 54%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(92vw, 920px);
+  z-index: 10;
+}
+
+@media (max-width: 640px) {
+  .token-pill-badge {
+    gap: 6px;
+    padding: 5px 12px 5px 6px;
+  }
+
+  .token-coin-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .token-text {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+}
+
+/* =========================================================
+   Mobile Landscape Viewport Optimization (Short Heights)
+   ========================================================= */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .lobby-center-container {
+    top: 56%;
+    width: min(92vw, 760px);
+  }
+
+  .play-pill-button {
+    width: clamp(190px, 26vw, 250px);
+    height: clamp(50px, 12vh, 66px);
+  }
+
+  .play-text {
+    font-size: clamp(20px, 4.5vh, 28px);
+  }
+
+  .lobby-shop-button {
+    width: clamp(160px, 22vw, 210px);
+    padding: 8px 18px;
+    font-size: 12px;
+  }
+
+  .adventurer-plate {
+    padding: 4px 14px;
+    font-size: 10px;
+  }
+}
+
+/* =========================================================
+   Force Landscape Mode — Portrait Warning Overlay
+   ========================================================= */
+
+@keyframes rotatePhoneHint {
+  0%, 15% {
+    transform: rotate(0deg) scale(1);
+  }
+  45%, 75% {
+    transform: rotate(-90deg) scale(1.06);
+  }
+  95%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.portrait-warning-overlay {
+  display: none;
+}
+
+.rotate-phone-icon {
+  animation: rotatePhoneHint 2.4s ease-in-out infinite;
+}
+
+@media (orientation: portrait) {
+  canvas,
+  .game-canvas,
+  .game-landscape-stage {
+    display: none !important;
+  }
+
+  .portrait-warning-overlay {
+    display: flex !important;
+  }
+}
+

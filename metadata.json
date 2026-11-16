@@ -1,0 +1,6 @@
+{
+  "name": "Haven - 2D Co-op Sanctuary",
+  "description": "A peaceful 2D top-down co-op puzzle web game set in a heavenly sanctuary. Team up with a friend to solve duo switches, collect Angel Coins, visit the shop, explore peaceful gardens, and find your Haven.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
